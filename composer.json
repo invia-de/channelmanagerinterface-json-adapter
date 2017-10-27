@@ -20,7 +20,7 @@
         }
     },
     "require": {
-        "invia/channelmanagerinterface": "^0.1.0",
+        "invia/channelmanagerinterface": "^0.2.0",
         "symfony/http-kernel": "^3.3",
         "symfony/config": "^3.3",
         "symfony/dependency-injection": "^3.3"
