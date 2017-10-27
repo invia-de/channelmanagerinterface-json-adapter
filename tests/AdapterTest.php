@@ -5,6 +5,7 @@ namespace Invia\Tests\CMI\JsonAdapterBundle;
 use Invia\CMI\BookedRatePlan;
 use Invia\CMI\Booking;
 use Invia\CMI\ConstantsInterface;
+use Invia\CMI\ContactInformation;
 use Invia\CMI\Credentials;
 use Invia\CMI\FacadeInterface;
 use Invia\CMI\JsonAdapterBundle\Adapter;
@@ -327,27 +328,34 @@ class AdapterTest extends TestCase
         $responseData = [
             'bookings' => [
                 [
-                    'bookingUUID'     => 'aa145b36-c6cd-420e-877a-b482d2adacbc',
-                    'hotelUUID'       => 'eaec4c7a-205a-4e64-890d-afd5a282ef45',
-                    'arrivalDate'     => '2017-01-30',
-                    'departureDate'   => '2017-01-31',
-                    'bookingDateTime' => '2017-01-02 13:42:27',
-                    'bookedRatePlans' => [
+                    'bookingUUID'        => 'aa145b36-c6cd-420e-877a-b482d2adacbc',
+                    'hotelUUID'          => 'eaec4c7a-205a-4e64-890d-afd5a282ef45',
+                    'arrivalDate'        => '2017-01-30',
+                    'departureDate'      => '2017-01-31',
+                    'bookingDateTime'    => '2017-01-02 13:42:27',
+                    'bookedRatePlans'    => [
                         [
                             'rateUUID' => '0b8763ee-41dd-47ea-90b2-36d7e5e4bea3',
                             'roomUUID' => 'ad6aa4ab-6adc-40c5-93c3-3e0e490e963e',
                             'count'    => 1,
                         ],
                     ],
-                    'status'          => 'open',
-                    'price'           => 42.00,
-                    'customer'        => [
+                    'status'             => 'open',
+                    'price'              => 42.00,
+                    'customer'           => [
                         'gender'    => ConstantsInterface::GENDER_MALE,
                         'firstName' => 'lorem',
                         'lastName'  => 'ipsum',
-                        'age'       => 30,
                     ],
-                    'pax'             => [
+                    'contactInformation' => [
+                        'streetAndNumber' => 'lorem ipsum 1a',
+                        'postalCode'      => '01234',
+                        'city'            => 'lorem',
+                        'country'         => 'DEU',
+                        'email'           => 'lorem@ipsum.de',
+                        'phone'           => '01234/567890',
+                    ],
+                    'pax'                => [
                         [
                             'gender'    => ConstantsInterface::GENDER_MALE,
                             'firstName' => 'lorem',
@@ -355,7 +363,7 @@ class AdapterTest extends TestCase
                             'age'       => 30,
                         ]
                     ],
-                    'comment'         => 'lorem ipsum',
+                    'comment'            => 'lorem ipsum',
                 ],
             ],
         ];
@@ -380,7 +388,15 @@ class AdapterTest extends TestCase
                     ->setGender($responseData['bookings'][0]['customer']['gender'])
                     ->setFirstName($responseData['bookings'][0]['customer']['firstName'])
                     ->setLastName($responseData['bookings'][0]['customer']['lastName'])
-                    ->setAge($responseData['bookings'][0]['customer']['age'])
+            )
+            ->setContactInformation(
+                (new ContactInformation())
+                    ->setStreetAndNumber($responseData['bookings'][0]['contactInformation']['streetAndNumber'])
+                    ->setPostalCode($responseData['bookings'][0]['contactInformation']['postalCode'])
+                    ->setCity($responseData['bookings'][0]['contactInformation']['city'])
+                    ->setCountry($responseData['bookings'][0]['contactInformation']['country'])
+                    ->setEmail($responseData['bookings'][0]['contactInformation']['email'])
+                    ->setPhone($responseData['bookings'][0]['contactInformation']['phone'])
             )
             ->setPax([
                 (new Person)

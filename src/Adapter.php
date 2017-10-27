@@ -204,24 +204,32 @@ class Adapter implements AdapterInterface
         $response['bookings'] = [];
 
         foreach ($bookings as $booking) {
-            $customer    = $booking->getCustomer();
-            $bookingData = [
-                'bookingUUID'     => $booking->getBookingUUID(),
-                'hotelUUID'       => $booking->getHotelUUID(),
-                'arrivalDate'     => $booking->getArrivalDate()->format(self::DATE_FORMAT),
-                'departureDate'   => $booking->getDepartureDate()->format(self::DATE_FORMAT),
-                'bookingDateTime' => $booking->getBookingDateTime()->format(self::DATETIME_FORMAT),
-                'bookedRatePlans' => [],
-                'status'          => $booking->getStatus(),
-                'price'           => $booking->getPrice(),
-                'customer'        => [
+            $customer           = $booking->getCustomer();
+            $contactInformation = $booking->getContactInformation();
+            $bookingData        = [
+                'bookingUUID'        => $booking->getBookingUUID(),
+                'hotelUUID'          => $booking->getHotelUUID(),
+                'arrivalDate'        => $booking->getArrivalDate()->format(self::DATE_FORMAT),
+                'departureDate'      => $booking->getDepartureDate()->format(self::DATE_FORMAT),
+                'bookingDateTime'    => $booking->getBookingDateTime()->format(self::DATETIME_FORMAT),
+                'bookedRatePlans'    => [],
+                'status'             => $booking->getStatus(),
+                'price'              => $booking->getPrice(),
+                'customer'           => [
                     'gender'    => $customer->getGender(),
                     'firstName' => $customer->getFirstName(),
                     'lastName'  => $customer->getLastName(),
-                    'age'       => $customer->getAge(),
                 ],
-                'pax'             => [],
-                'comment'         => $booking->getComment() ?? '',
+                'contactInformation' => [
+                    'streetAndNumber' => $contactInformation->getStreetAndNumber(),
+                    'postalCode'      => $contactInformation->getPostalCode(),
+                    'city'            => $contactInformation->getCity(),
+                    'country'         => $contactInformation->getCountry(),
+                    'email'           => $contactInformation->getEmail(),
+                    'phone'           => $contactInformation->getPhone() ?? '',
+                ],
+                'pax'                => [],
+                'comment'            => $booking->getComment() ?? '',
             ];
 
             foreach ($booking->getBookedRatePlans() as $ratePlan) {
