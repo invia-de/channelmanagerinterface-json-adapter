@@ -10,7 +10,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 /**
  * {@inheritdoc}
  */
-class InviaCMIJsonAdapterBundleExtension extends Extension
+class InviaCMIJsonAdapterExtension extends Extension
 {
     /**
      * {@inheritdoc}
