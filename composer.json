@@ -21,11 +21,11 @@
     },
     "require": {
         "invia/channelmanagerinterface": "^0.2.0",
-        "symfony/http-kernel": "^3.3",
-        "symfony/config": "^3.3",
-        "symfony/dependency-injection": "^3.3"
+        "symfony/http-kernel": "^3.4",
+        "symfony/config": "^3.4",
+        "symfony/dependency-injection": "^3.4"
     },
     "require-dev": {
-        "phpunit/phpunit": "^6.4"
+        "phpunit/phpunit": "^6.5"
     }
 }

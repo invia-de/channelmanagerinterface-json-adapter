@@ -3,4 +3,4 @@ services:
   invia.cmi.json_adapter.adapter:
     class: Invia\CMI\JsonAdapterBundle\Adapter
     public: false
-    tags: [!php/const:Invia\CMI\ConstantsInterface::ADAPTER_TAG]
+    tags: [ !php/const Invia\CMI\ConstantsInterface::ADAPTER_TAG ]
