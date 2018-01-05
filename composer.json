@@ -20,12 +20,12 @@
         }
     },
     "require": {
-        "invia/channelmanagerinterface": "^0.2.0",
+        "invia/channelmanagerinterface": "^0.3.1",
         "symfony/http-kernel": "^3.4",
         "symfony/config": "^3.4",
         "symfony/dependency-injection": "^3.4"
     },
     "require-dev": {
-        "phpunit/phpunit": "^6.5"
+        "phpunit/phpunit": "@stable"
     }
 }
