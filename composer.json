@@ -1,0 +1,32 @@
+{
+    "name": "invia/cmi-json-adapterbundle",
+    "description": "A JSON Adapter for the Invia channel manager interface",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Torsten Burschka",
+            "email": "torsten.burschka@invia.de"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Invia\\CMI\\JsonAdapterBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Invia\\Tests\\CMI\\JsonAdapterBundle\\": "tests/"
+        }
+    },
+    "require": {
+        "php": ">=7.1",
+        "invia/channelmanagerinterface": "^0.4",
+        "symfony/http-kernel": "~3.4",
+        "symfony/config": "~3.4",
+        "symfony/dependency-injection": "~3.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "@stable"
+    }
+}
