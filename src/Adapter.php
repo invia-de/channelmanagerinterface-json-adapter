@@ -39,7 +39,7 @@ class Adapter implements AdapterInterface
     /**
      * @return string
      */
-    public function getAdapterKey() : string
+    public function getAdapterKey(): string
     {
         return self::ADAPTER_KEY;
     }
@@ -47,7 +47,7 @@ class Adapter implements AdapterInterface
     /**
      * @return string
      */
-    public function getUrlPath() : string
+    public function getUrlPath(): string
     {
         return self::URL_PATH;
     }
@@ -57,7 +57,7 @@ class Adapter implements AdapterInterface
      *
      * @return AdapterInterface
      */
-    public function setRequest(Request $request) : AdapterInterface
+    public function setRequest(Request $request): AdapterInterface
     {
         $this->request = $request;
 
@@ -67,7 +67,7 @@ class Adapter implements AdapterInterface
     /**
      * @return Credentials
      */
-    public function getCredentials() : Credentials
+    public function getCredentials(): Credentials
     {
         $credentials = new Credentials();
 
@@ -83,13 +83,13 @@ class Adapter implements AdapterInterface
      *
      * @return Response
      */
-    public function handleRequest(FacadeInterface $facade) : Response
+    public function handleRequest(FacadeInterface $facade): Response
     {
         $data     = $this->transform($this->request);
         $method   = key($data);
         $response = [];
 
-        if (is_string($method) && in_array($method, self::METHOD_WHITELIST, true)) {
+        if (\is_string($method) && \in_array($method, self::METHOD_WHITELIST, true)) {
             $response = $this->$method($facade, $data[$method]);
         }
 
@@ -101,7 +101,7 @@ class Adapter implements AdapterInterface
      *
      * @return array
      */
-    protected function transform(Request $request) : array
+    protected function transform(Request $request): array
     {
         try {
             $data = [];
@@ -111,7 +111,7 @@ class Adapter implements AdapterInterface
         } catch (\LogicException $e) {
         }
 
-        return is_array($data) ? $data : [];
+        return \is_array($data) ? $data : [];
     }
 
     /**
@@ -120,7 +120,7 @@ class Adapter implements AdapterInterface
      *
      * @return array
      */
-    protected function getRooms(FacadeInterface $facade, array $data) : array
+    protected function getRooms(FacadeInterface $facade, array $data): array
     {
         $hotel = (new Hotel())->setUUID($data['uuid']);
         $rooms = $facade->getRooms($hotel);
@@ -145,7 +145,7 @@ class Adapter implements AdapterInterface
      *
      * @return array
      */
-    protected function getRates(FacadeInterface $facade, array $data) : array
+    protected function getRates(FacadeInterface $facade, array $data): array
     {
         $hotel = (new Hotel())->setUUID($data['uuid']);
         $rates = $facade->getRates($hotel);
@@ -154,7 +154,7 @@ class Adapter implements AdapterInterface
         $response['rates'] = [];
         foreach ($rates as $rate) {
             $response['rates'][] = [
-                'uuid'    => $rate->getUuid(),
+                'uuid'    => $rate->getUUID(),
                 'name'    => $rate->getName(),
                 'release' => $rate->getRelease(),
                 'minStay' => $rate->getMinStay(),
@@ -171,7 +171,7 @@ class Adapter implements AdapterInterface
      *
      * @return array
      */
-    protected function getBookings(FacadeInterface $facade, array $data) : array
+    protected function getBookings(FacadeInterface $facade, array $data): array
     {
         $bookingRequest = new BookingRequest();
 
@@ -261,7 +261,7 @@ class Adapter implements AdapterInterface
      *
      * @return array
      */
-    protected function getRatePlans(FacadeInterface $facade, array $data) : array
+    protected function getRatePlans(FacadeInterface $facade, array $data): array
     {
         $ratePlanRequest = (new RatePlanRequest())
             ->setHotelUUID($data['hotelUUID'])
@@ -287,7 +287,7 @@ class Adapter implements AdapterInterface
      *
      * @return array
      */
-    protected function saveRatePlans(FacadeInterface $facade, array $data) : array
+    protected function saveRatePlans(FacadeInterface $facade, array $data): array
     {
         $ratePlanSaveRequest = (new RatePlanSaveRequest())
             ->setHotelUUID($data['hotelUUID'])
@@ -332,7 +332,7 @@ class Adapter implements AdapterInterface
      *
      * @return array
      */
-    protected function mapRatePlans(array $ratePlans) : array
+    protected function mapRatePlans(array $ratePlans): array
     {
         $mapped = [];
 

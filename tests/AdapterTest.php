@@ -38,7 +38,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::getAdapterKey
      */
-    public function testGetAdapterKey() : void
+    public function testGetAdapterKey(): void
     {
         $this->assertEquals('invia_cmi_json', $this->instance->getAdapterKey());
     }
@@ -48,7 +48,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::getUrlPath
      */
-    public function testGetUrlPath() : void
+    public function testGetUrlPath(): void
     {
         $this->assertEquals('/invia/json', $this->instance->getUrlPath());
     }
@@ -58,7 +58,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::setRequest
      */
-    public function testSetRequest() : void
+    public function testSetRequest(): void
     {
         $request = new Request();
         $this->assertEquals($this->instance, $this->instance->setRequest($request));
@@ -73,7 +73,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::getCredentials
      */
-    public function testGetCredentials() : void
+    public function testGetCredentials(): void
     {
         $request = new Request();
 
@@ -90,8 +90,10 @@ class AdapterTest extends TestCase
         $this->assertEquals($authToken, $credentials->getAuthToken());
     }
 
-
-    public function providerTransform()
+    /**
+     * @return array
+     */
+    public function providerTransform(): array
     {
         return [
             [
@@ -119,7 +121,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::transform
      */
-    public function testTransform($content, $data) : void
+    public function testTransform($content, $data): void
     {
         $request = $this->createMock(Request::class);
         $request
@@ -137,7 +139,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::transform
      */
-    public function testTransformException() : void
+    public function testTransformException(): void
     {
         $request = $this->createMock(Request::class);
         $request
@@ -155,7 +157,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::handleRequest
      */
-    public function testHandleRequestInvalidMethod() : void
+    public function testHandleRequestInvalidMethod(): void
     {
         $request = new Request();
         $facade  = $this->createMock(FacadeInterface::class);
@@ -173,7 +175,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::handleRequest
      */
-    public function testHandleRequestValidMethod() : void
+    public function testHandleRequestValidMethod(): void
     {
         $requestData = [
             'getRooms' => [
@@ -225,7 +227,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::getRooms
      */
-    public function testGetRooms() : void
+    public function testGetRooms(): void
     {
         $reflection = new \ReflectionMethod($this->instance, 'getRooms');
         $reflection->setAccessible(true);
@@ -267,7 +269,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::getRates
      */
-    public function testGetRates() : void
+    public function testGetRates(): void
     {
         $reflection = new \ReflectionMethod($this->instance, 'getRates');
         $reflection->setAccessible(true);
@@ -311,7 +313,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::getBookings
      */
-    public function testGetBookings() : void
+    public function testGetBookings(): void
     {
         $reflection = new \ReflectionMethod($this->instance, 'getBookings');
         $reflection->setAccessible(true);
@@ -422,7 +424,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::getRatePlans
      */
-    public function testGetRatePlans() : void
+    public function testGetRatePlans(): void
     {
         $reflection = new \ReflectionMethod($this->instance, 'getRatePlans');
         $reflection->setAccessible(true);
@@ -431,8 +433,8 @@ class AdapterTest extends TestCase
             'hotelUUID'        => 'cf8ba186-1e22-4c60-be02-41df2ea69682',
             'roomUUIDs'        => [ 'e460cd06-fe5b-44e0-ba19-f237721686de' ],
             'rateUUIDs'        => [ '6a5a9fd7-cbb0-4ee8-ace1-1447362e95e3' ],
-            'arrivalDate'      => '2017-01-30',
-            'departureDate'    => '2017-01-31',
+            'startDate'        => '2017-01-30',
+            'endDate'          => '2017-01-31',
             'affectedWeekDays' => [ ConstantsInterface::AFFECTED_WEEK_DAY_MONDAY ],
         ];
 
@@ -481,7 +483,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::saveRatePlans
      */
-    public function testSaveRatePlans() : void
+    public function testSaveRatePlans(): void
     {
         $reflection = new \ReflectionMethod($this->instance, 'saveRatePlans');
         $reflection->setAccessible(true);
@@ -490,8 +492,8 @@ class AdapterTest extends TestCase
             'hotelUUID'           => 'fdb7efe9-e02d-4fe4-a252-2eda78cc4119',
             'roomUUID'            => 'd752198d-658a-4138-9de0-25d02601fdd0',
             'rateUUID'            => 'dee4fbff-d4ff-4888-8168-9026aee81813',
-            'arrivalDate'         => '2017-01-30',
-            'departureDate'       => '2017-01-31',
+            'startDate'           => '2017-01-30',
+            'endDate'             => '2017-01-31',
             'affectedWeekDays'    => [ ConstantsInterface::AFFECTED_WEEK_DAY_TUESDAY ],
             'pricePerPerson'      => 27,
             'remainingContingent' => 5,
@@ -545,7 +547,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::mapRatePlans
      */
-    public function testMapRatePlans() : void
+    public function testMapRatePlans(): void
     {
         $responseData = [
             [
