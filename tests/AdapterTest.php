@@ -344,6 +344,7 @@ class AdapterTest extends TestCase
                     ],
                     'status'             => 'open',
                     'price'              => 42.00,
+                    'currency'           => 'EUR',
                     'customer'           => [
                         'gender'    => ConstantsInterface::GENDER_MALE,
                         'firstName' => 'lorem',
@@ -385,6 +386,7 @@ class AdapterTest extends TestCase
             ])
             ->setStatus($responseData['bookings'][0]['status'])
             ->setPrice($responseData['bookings'][0]['price'])
+            ->setCurrency($responseData['bookings'][0]['currency'])
             ->setCustomer(
                 (new Person())
                     ->setGender($responseData['bookings'][0]['customer']['gender'])

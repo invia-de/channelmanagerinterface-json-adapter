@@ -215,6 +215,7 @@ class Adapter implements AdapterInterface
                 'bookedRatePlans'    => [],
                 'status'             => $booking->getStatus(),
                 'price'              => $booking->getPrice(),
+                'currency'           => $booking->getCurrency(),
                 'customer'           => [
                     'gender'    => $customer->getGender(),
                     'firstName' => $customer->getFirstName(),
