@@ -3,13 +3,17 @@
 namespace Invia\CMI\JsonAdapterBundle;
 
 use Invia\CMI\AdapterInterface;
+use Invia\CMI\Booking;
+use Invia\CMI\BookingNotificationFailedException;
+use Invia\CMI\BookingNotifyInterface;
 use Invia\CMI\BookingRequest;
 use Invia\CMI\Credentials;
 use Invia\CMI\FacadeInterface;
-use Invia\CMI\Hotel;
 use Invia\CMI\RatePlan;
 use Invia\CMI\RatePlanRequest;
 use Invia\CMI\RatePlanSaveRequest;
+use Invia\CMI\RateRequest;
+use Invia\CMI\RoomRequest;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Class Adapter
  */
-class Adapter implements AdapterInterface
+class Adapter implements AdapterInterface, BookingNotifyInterface
 {
     protected const ADAPTER_KEY      = 'invia_cmi_json';
     protected const URL_PATH         = '/invia/json';
@@ -116,14 +120,17 @@ class Adapter implements AdapterInterface
 
     /**
      * @param FacadeInterface $facade
-     * @param array           $data
+     * @param array $data
      *
      * @return array
+     *
+     * @throws \Invia\CMI\InsufficientRightsException
+     * @throws \Invia\CMI\InvalidRequestException
      */
     protected function getRooms(FacadeInterface $facade, array $data): array
     {
-        $hotel = (new Hotel())->setUUID($data['uuid']);
-        $rooms = $facade->getRooms($hotel);
+        $request = (new RoomRequest())->setHotelUUID($data['uuid']);
+        $rooms   = $facade->getRooms($request);
 
         $response          = [];
         $response['rooms'] = [];
@@ -144,11 +151,14 @@ class Adapter implements AdapterInterface
      * @param array           $data
      *
      * @return array
+     *
+     * @throws \Invia\CMI\InsufficientRightsException
+     * @throws \Invia\CMI\InvalidRequestException
      */
     protected function getRates(FacadeInterface $facade, array $data): array
     {
-        $hotel = (new Hotel())->setUUID($data['uuid']);
-        $rates = $facade->getRates($hotel);
+        $request = (new RateRequest())->setHotelUUID($data['uuid']);
+        $rates   = $facade->getRates($request);
 
         $response          = [];
         $response['rates'] = [];
@@ -170,17 +180,18 @@ class Adapter implements AdapterInterface
      * @param array           $data
      *
      * @return array
+     *
+     * @throws \Invia\CMI\InsufficientRightsException
+     * @throws \Invia\CMI\InvalidRequestException
      */
     protected function getBookings(FacadeInterface $facade, array $data): array
     {
         $bookingRequest = new BookingRequest();
+        $bookingRequest->setHotelUUID($data['hotelUUID']);
+
 
         if (isset($data['bookingUUID'])) {
             $bookingRequest->setBookingUUID($data['bookingUUID']);
-        }
-
-        if (isset($data['hotelUUID'])) {
-            $bookingRequest->setHotelUUID($data['hotelUUID']);
         }
 
         if (isset($data['startDate'])) {
@@ -261,6 +272,9 @@ class Adapter implements AdapterInterface
      * @param array           $data
      *
      * @return array
+     *
+     * @throws \Invia\CMI\InsufficientRightsException
+     * @throws \Invia\CMI\InvalidRequestException
      */
     protected function getRatePlans(FacadeInterface $facade, array $data): array
     {
@@ -287,6 +301,9 @@ class Adapter implements AdapterInterface
      * @param array           $data
      *
      * @return array
+     *
+     * @throws \Invia\CMI\InsufficientRightsException
+     * @throws \Invia\CMI\InvalidRequestException
      */
     protected function saveRatePlans(FacadeInterface $facade, array $data): array
     {
@@ -353,5 +370,20 @@ class Adapter implements AdapterInterface
         }
 
         return $mapped;
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @codeCoverageIgnore
+     */
+    public function bookingNotify(Booking $booking): void
+    {
+        try {
+            // create and send a request to your system and inform about the new booking.
+        } catch (\Exception $e) {
+            $message = sprintf('Notification for booking \'%s\' failed!.', $booking->getBookingUUID());
+            throw new BookingNotificationFailedException($message, $e->getCode(), $e);
+        }
     }
 }

@@ -4,6 +4,7 @@ namespace Invia\Tests\CMI\JsonAdapterBundle;
 
 use Invia\CMI\BookedRatePlan;
 use Invia\CMI\Booking;
+use Invia\CMI\BookingRequest;
 use Invia\CMI\ConstantsInterface;
 use Invia\CMI\ContactInformation;
 use Invia\CMI\Credentials;
@@ -12,7 +13,11 @@ use Invia\CMI\JsonAdapterBundle\Adapter;
 use Invia\CMI\Person;
 use Invia\CMI\Rate;
 use Invia\CMI\RatePlan;
+use Invia\CMI\RatePlanRequest;
+use Invia\CMI\RatePlanSaveRequest;
+use Invia\CMI\RateRequest;
 use Invia\CMI\Room;
+use Invia\CMI\RoomRequest;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -259,6 +264,7 @@ class AdapterTest extends TestCase
         $facade
             ->expects($this->once())
             ->method('getRooms')
+            ->with($this->isInstanceOf(RoomRequest::class))
             ->willReturn([$room]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
@@ -303,6 +309,7 @@ class AdapterTest extends TestCase
         $facade
             ->expects($this->once())
             ->method('getRates')
+            ->with($this->isInstanceOf(RateRequest::class))
             ->willReturn([$rate]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
@@ -416,6 +423,7 @@ class AdapterTest extends TestCase
         $facade
             ->expects($this->once())
             ->method('getBookings')
+            ->with($this->isInstanceOf(BookingRequest::class))
             ->willReturn([$booking]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
@@ -475,6 +483,7 @@ class AdapterTest extends TestCase
         $facade
             ->expects($this->once())
             ->method('getRatePlans')
+            ->with($this->isInstanceOf(RatePlanRequest::class))
             ->willReturn([$ratePlan]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
@@ -539,6 +548,7 @@ class AdapterTest extends TestCase
         $facade
             ->expects($this->once())
             ->method('saveRatePlans')
+            ->with($this->isInstanceOf(RatePlanSaveRequest::class))
             ->willReturn([$ratePlan]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
