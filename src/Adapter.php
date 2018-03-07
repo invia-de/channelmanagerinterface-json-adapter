@@ -3,16 +3,25 @@
 namespace Invia\CMI\JsonAdapterBundle;
 
 use Invia\CMI\AdapterInterface;
+use Invia\CMI\BookedRate;
 use Invia\CMI\Booking;
 use Invia\CMI\BookingNotificationFailedException;
 use Invia\CMI\BookingNotifyInterface;
 use Invia\CMI\BookingRequest;
+use Invia\CMI\CMIException;
 use Invia\CMI\Credentials;
+use Invia\CMI\Customer;
+use Invia\CMI\DailyPrice;
+use Invia\CMI\ExtraOccupancy;
 use Invia\CMI\FacadeInterface;
+use Invia\CMI\Guest;
+use Invia\CMI\HotelRequest;
+use Invia\CMI\Rate;
 use Invia\CMI\RatePlan;
 use Invia\CMI\RatePlanRequest;
 use Invia\CMI\RatePlanSaveRequest;
 use Invia\CMI\RateRequest;
+use Invia\CMI\RateSaveRequest;
 use Invia\CMI\RoomRequest;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,11 +37,12 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
     protected const DATE_FORMAT      = 'Y-m-d';
     protected const DATETIME_FORMAT  = 'Y-m-d H:i:s';
     protected const METHOD_WHITELIST = [
+        'getHotel',
         'getRooms',
-        'getRates',
-        'getBookings',
         'getRatePlans',
-        'saveRatePlans',
+        'getBookings',
+        'getRates',
+        'saveRates',
     ];
 
     /**
@@ -89,15 +99,34 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
      */
     public function handleRequest(FacadeInterface $facade): Response
     {
-        $data     = $this->transform($this->request);
-        $method   = key($data);
-        $response = [];
+        $data   = $this->transform($this->request);
+        $method = key($data);
 
-        if (\is_string($method) && \in_array($method, self::METHOD_WHITELIST, true)) {
-            $response = $this->$method($facade, $data[$method]);
+        try {
+            if (\is_string($method) && \in_array($method, self::METHOD_WHITELIST, true)) {
+                $status   = 200;
+                $response = $this->$method($facade, $data[$method]);
+            } else {
+                throw new CMIException('Called method not found.', 404);
+            }
+        } catch (CMIException $exception) {
+            $status   = 400;
+            $response['errors'][] = [
+                'code'    => $exception->getCode(),
+                'message' => $exception->getMessage(),
+            ];
+
+            if (\count($exception->getErrors()) > 0) {
+                foreach ($exception->getErrors() as $error) {
+                    $response['errors'][] = [
+                        'code'    => $error->getCode(),
+                        'message' => $error->getMessage(),
+                    ];
+                }
+            }
         }
 
-        return new JsonResponse($response);
+        return new JsonResponse($response, $status);
     }
 
     /**
@@ -120,12 +149,35 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
 
     /**
      * @param FacadeInterface $facade
+     * @param array           $data
+     *
+     * @return array
+     *
+     * @throws \Invia\CMI\CMIException
+     */
+    protected function getHotel(FacadeInterface $facade, array $data): array
+    {
+        $request = (new HotelRequest())->setHotelUUID($data['uuid']);
+        $hotel   = $facade->getHotel($request);
+
+        $response = [
+            'hotel' => [
+                'uuid'     => $hotel->getUUID(),
+                'name'     => $hotel->getName(),
+                'currency' => $hotel->getCurrency(),
+            ],
+        ];
+
+        return $response;
+    }
+
+    /**
+     * @param FacadeInterface $facade
      * @param array $data
      *
      * @return array
      *
-     * @throws \Invia\CMI\InsufficientRightsException
-     * @throws \Invia\CMI\InvalidRequestException
+     * @throws \Invia\CMI\CMIException
      */
     protected function getRooms(FacadeInterface $facade, array $data): array
     {
@@ -140,10 +192,31 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
                 'name'             => $room->getName(),
                 'count'            => $room->getCount(),
                 'defaultOccupancy' => $room->getDefaultOccupancy(),
+                'extraOccupancies' => $this->mapExtraOccupancies($room->getExtraOccupancies()),
             ];
         }
 
         return $response;
+    }
+
+    /**
+     * @param ExtraOccupancy[] $extraOccupancies
+     *
+     * @return array
+     */
+    protected function mapExtraOccupancies(array $extraOccupancies): array
+    {
+        $mapped = [];
+
+        foreach($extraOccupancies as $extraOccupancy) {
+            $mapped[] = [
+                'adults'   => $extraOccupancy->getAdults(),
+                'children' => $extraOccupancy->getChildren(),
+                'infants'  => $extraOccupancy->getInfants(),
+            ];
+        }
+
+        return $mapped;
     }
 
     /**
@@ -152,23 +225,24 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
      *
      * @return array
      *
-     * @throws \Invia\CMI\InsufficientRightsException
-     * @throws \Invia\CMI\InvalidRequestException
+     * @throws \Invia\CMI\CMIException
      */
-    protected function getRates(FacadeInterface $facade, array $data): array
+    protected function getRatePlans(FacadeInterface $facade, array $data): array
     {
-        $request = (new RateRequest())->setHotelUUID($data['uuid']);
-        $rates   = $facade->getRates($request);
+        $request   = (new RatePlanRequest())->setHotelUUID($data['uuid']);
+        $ratePlans = $facade->getRatePlans($request);
 
         $response          = [];
         $response['rates'] = [];
-        foreach ($rates as $rate) {
+        foreach ($ratePlans as $ratePlan) {
             $response['rates'][] = [
-                'uuid'    => $rate->getUUID(),
-                'name'    => $rate->getName(),
-                'release' => $rate->getRelease(),
-                'minStay' => $rate->getMinStay(),
-                'maxStay' => $rate->getMaxStay(),
+                'uuid'     => $ratePlan->getUUID(),
+                'name'     => $ratePlan->getName(),
+                'release'  => $ratePlan->getRelease(),
+                'minStay'  => $ratePlan->getMinStay(),
+                'maxStay'  => $ratePlan->getMaxStay(),
+                'rateType' => $ratePlan->getRateType(),
+                'boarding' => $ratePlan->getBoarding(),
             ];
         }
 
@@ -181,8 +255,7 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
      *
      * @return array
      *
-     * @throws \Invia\CMI\InsufficientRightsException
-     * @throws \Invia\CMI\InvalidRequestException
+     * @throws \Invia\CMI\CMIException
      */
     protected function getBookings(FacadeInterface $facade, array $data): array
     {
@@ -206,8 +279,8 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
             $bookingRequest->setDateType($data['dateType']);
         }
 
-        if (isset($data['onlyChanged'])) {
-            $bookingRequest->setOnlyChanged((bool)(int) $data['onlyChanged']);
+        if (isset($data['onlyUpdated'])) {
+            $bookingRequest->setOnlyUpdated((bool)(int) $data['onlyUpdated']);
         }
 
         $bookings             = $facade->getBookings($bookingRequest);
@@ -215,56 +288,111 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
         $response['bookings'] = [];
 
         foreach ($bookings as $booking) {
-            $customer           = $booking->getCustomer();
-            $contactInformation = $booking->getContactInformation();
-            $bookingData        = [
-                'bookingUUID'        => $booking->getBookingUUID(),
-                'hotelUUID'          => $booking->getHotelUUID(),
-                'arrivalDate'        => $booking->getArrivalDate()->format(self::DATE_FORMAT),
-                'departureDate'      => $booking->getDepartureDate()->format(self::DATE_FORMAT),
-                'bookingDateTime'    => $booking->getBookingDateTime()->format(self::DATETIME_FORMAT),
-                'bookedRatePlans'    => [],
-                'status'             => $booking->getStatus(),
-                'price'              => $booking->getPrice(),
-                'currency'           => $booking->getCurrency(),
-                'customer'           => [
-                    'gender'    => $customer->getGender(),
-                    'firstName' => $customer->getFirstName(),
-                    'lastName'  => $customer->getLastName(),
-                ],
-                'contactInformation' => [
-                    'streetAndNumber' => $contactInformation->getStreetAndNumber(),
-                    'postalCode'      => $contactInformation->getPostalCode(),
-                    'city'            => $contactInformation->getCity(),
-                    'country'         => $contactInformation->getCountry(),
-                    'email'           => $contactInformation->getEmail(),
-                    'phone'           => $contactInformation->getPhone() ?? '',
-                ],
-                'pax'                => [],
-                'comment'            => $booking->getComment() ?? '',
+            $response['bookings'][] = [
+                'bookingUUID'            => $booking->getBookingUUID(),
+                'hotelUUID'              => $booking->getHotelUUID(),
+                'arrivalDate'            => $booking->getArrivalDate()->format(self::DATE_FORMAT),
+                'departureDate'          => $booking->getDepartureDate()->format(self::DATE_FORMAT),
+                'createdDateTime'        => $booking->getCreatedDateTime()->format(self::DATETIME_FORMAT),
+                'updatedDateTime'        => $booking->getUpdatedDateTime() ? $booking->getUpdatedDateTime()->format(self::DATETIME_FORMAT) : null,
+                'bookedRates'            => $this->mapBookedRates($booking->getBookedRates()),
+                'status'                 => $booking->getStatus(),
+                'totalBookingPrice'      => $booking->getTotalBookingPrice(),
+                'totalCancellationCosts' => $booking->getTotalCancellationCosts(),
+                'currency'               => $booking->getCurrency(),
+                'customer'               => $this->mapCustomer($booking->getCustomer()),
+                'comment'                => $booking->getComment(),
             ];
-
-            foreach ($booking->getBookedRatePlans() as $ratePlan) {
-                $bookingData['bookedRatePlans'][] = [
-                    'rateUUID' => $ratePlan->getRateUUID(),
-                    'roomUUID' => $ratePlan->getRoomUUID(),
-                    'count'    => $ratePlan->getCount(),
-                ];
-            }
-
-            foreach ($booking->getPax() as $pax) {
-                $bookingData['pax'][] = [
-                    'gender'    => $pax->getGender(),
-                    'firstName' => $pax->getFirstName(),
-                    'lastName'  => $pax->getLastName(),
-                    'age'       => $pax->getAge(),
-                ];
-            }
-
-            $response['bookings'][] = $bookingData;
         }
 
         return $response;
+    }
+
+    /**
+     * @param BookedRate[] $bookedRates
+     *
+     * @return array
+     */
+    protected function mapBookedRates(array $bookedRates): array
+    {
+        $mapped = [];
+
+        foreach ($bookedRates as $bookedRate) {
+            $mapped[] = [
+                'roomUUID'          => $bookedRate->getRoomUUID(),
+                'roomName'          => $bookedRate->getRoomName(),
+                'rateUUID'          => $bookedRate->getRateUUID(),
+                'rateName'          => $bookedRate->getRateName(),
+                'rateType'          => $bookedRate->getRateType(),
+                'encashment'        => $bookedRate->getEncashment(),
+                'boarding'          => $bookedRate->getBoarding(),
+                'dailyPrices'       => $this->mapDailyPrices($bookedRate->getDailyPrices()),
+                'totalPrice'        => $bookedRate->getTotalPrice(),
+                'commission'        => $bookedRate->getCommission(),
+                'cancellationCosts' => $bookedRate->getCancellationCosts(),
+                'guests'            => $this->mapGuests($bookedRate->getGuests()),
+                'status'            => $bookedRate->getStatus(),
+            ];
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * @param DailyPrice[] $dailyPrices
+     *
+     * @return array
+     */
+    protected function mapDailyPrices(array $dailyPrices): array
+    {
+        $mapped = [];
+
+        foreach ($dailyPrices as $dailyPrice) {
+            $mapped[$dailyPrice->getDate()->format(self::DATE_FORMAT)] = $dailyPrice->getPrice();
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * @param Guest[] $guests
+     *
+     * @return array
+     */
+    protected function mapGuests(array $guests): array
+    {
+        $mapped = [];
+
+        foreach ($guests as $guest) {
+            $mapped[] = [
+                'gender'    => $guest->getGender(),
+                'firstName' => $guest->getFirstName(),
+                'lastName'  => $guest->getLastName(),
+                'age'       => $guest->getAge(),
+            ];
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * @param Customer $customer
+     *
+     * @return array
+     */
+    protected function mapCustomer(Customer $customer): array
+    {
+        return [
+            'gender'          => $customer->getGender(),
+            'firstName'       => $customer->getFirstName(),
+            'lastName'        => $customer->getLastName(),
+            'streetAndNumber' => $customer->getStreetAndNumber(),
+            'postalCode'      => $customer->getPostalCode(),
+            'city'            => $customer->getCity(),
+            'country'         => $customer->getCountry(),
+            'email'           => $customer->getEmail(),
+            'phone'           => $customer->getPhone(),
+        ];
     }
 
     /**
@@ -273,12 +401,11 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
      *
      * @return array
      *
-     * @throws \Invia\CMI\InsufficientRightsException
-     * @throws \Invia\CMI\InvalidRequestException
+     * @throws \Invia\CMI\CMIException
      */
-    protected function getRatePlans(FacadeInterface $facade, array $data): array
+    protected function getRates(FacadeInterface $facade, array $data): array
     {
-        $ratePlanRequest = (new RatePlanRequest())
+        $rateRequest = (new RateRequest())
             ->setHotelUUID($data['hotelUUID'])
             ->setRoomUUIDs($data['roomUUIDs'])
             ->setRateUUIDs($data['rateUUIDs'])
@@ -286,12 +413,12 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
             ->setEndDate(new \DateTime($data['endDate']));
 
         if (isset($data['affectedWeekDays'])) {
-            $ratePlanRequest->setAffectedWeekDays($data['affectedWeekDays']);
+            $rateRequest->setAffectedWeekDays($data['affectedWeekDays']);
         }
 
-        $ratePlans             = $facade->getRatePlans($ratePlanRequest);
-        $response              = [];
-        $response['ratePlans'] = $this->mapRatePlans($ratePlans);
+        $rates             = $facade->getRates($rateRequest);
+        $response          = [];
+        $response['rates'] = $this->mapRates($rates);
 
         return $response;
     }
@@ -302,12 +429,11 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
      *
      * @return array
      *
-     * @throws \Invia\CMI\InsufficientRightsException
-     * @throws \Invia\CMI\InvalidRequestException
+     * @throws \Invia\CMI\CMIException
      */
-    protected function saveRatePlans(FacadeInterface $facade, array $data): array
+    protected function saveRates(FacadeInterface $facade, array $data): array
     {
-        $ratePlanSaveRequest = (new RatePlanSaveRequest())
+        $rateSaveRequest = (new RateSaveRequest())
             ->setHotelUUID($data['hotelUUID'])
             ->setRoomUUID($data['roomUUID'])
             ->setRateUUID($data['rateUUID'])
@@ -315,57 +441,56 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
             ->setEndDate(new \DateTime($data['endDate']));
 
         if (isset($data['affectedWeekDays'])) {
-            $ratePlanSaveRequest->setAffectedWeekDays($data['affectedWeekDays']);
+            $rateSaveRequest->setAffectedWeekDays($data['affectedWeekDays']);
         }
 
         if (isset($data['pricePerPerson'])) {
-            $ratePlanSaveRequest->setPricePerPerson((float) $data['pricePerPerson']);
+            $rateSaveRequest->setPricePerPerson((float) $data['pricePerPerson']);
         }
 
         if (isset($data['remainingContingent'])) {
-            $ratePlanSaveRequest->setRemainingContingent((int) $data['remainingContingent']);
+            $rateSaveRequest->setRemainingContingent((int) $data['remainingContingent']);
         }
 
         if (isset($data['stopSell'])) {
-            $ratePlanSaveRequest->setStopSell((bool)(int) $data['stopSell']);
+            $rateSaveRequest->setStopSell((bool)(int) $data['stopSell']);
         }
 
         if (isset($data['closedArrival'])) {
-            $ratePlanSaveRequest->setClosedArrival((bool)(int) $data['closedArrival']);
+            $rateSaveRequest->setClosedArrival((bool)(int) $data['closedArrival']);
         }
 
         if (isset($data['closedDeparture'])) {
-            $ratePlanSaveRequest->setClosedDeparture((bool)(int) $data['closedDeparture']);
+            $rateSaveRequest->setClosedDeparture((bool)(int) $data['closedDeparture']);
         }
 
-        $ratePlans             = $facade->saveRatePlans($ratePlanSaveRequest);
-        $response              = [];
-        $response['ratePlans'] = $this->mapRatePlans($ratePlans);
+        $ratePlans         = $facade->saveRates($rateSaveRequest);
+        $response          = [];
+        $response['rates'] = $this->mapRates($ratePlans);
 
         return $response;
     }
 
     /**
-     * @param RatePlan[] $ratePlans
+     * @param Rate[] $rates
      *
      * @return array
      */
-    protected function mapRatePlans(array $ratePlans): array
+    protected function mapRates(array $rates): array
     {
         $mapped = [];
 
-        foreach ($ratePlans as $ratePlan) {
+        foreach ($rates as $rate) {
             $mapped[] = [
-                'hotelUUID'           => $ratePlan->getHotelUUID(),
-                'roomUUID'            => $ratePlan->getRoomUUID(),
-                'rateUUID'            => $ratePlan->getRateUUID(),
-                'date'                => $ratePlan->getDate()->format(self::DATE_FORMAT),
-                'pricePerPerson'      => $ratePlan->getPricePerPerson(),
-                'remainingContingent' => $ratePlan->getRemainingContingent(),
-                'booked'              => $ratePlan->getBooked(),
-                'stopSell'            => $ratePlan->hasStopSell(),
-                'closedArrival'       => $ratePlan->isClosedArrival(),
-                'closedDeparture'     => $ratePlan->isClosedDeparture(),
+                'hotelUUID'           => $rate->getHotelUUID(),
+                'roomUUID'            => $rate->getRoomUUID(),
+                'rateUUID'            => $rate->getRateUUID(),
+                'date'                => $rate->getDate()->format(self::DATE_FORMAT),
+                'pricePerPerson'      => $rate->getPricePerPerson(),
+                'remainingContingent' => $rate->getRemainingContingent(),
+                'stopSell'            => $rate->hasStopSell(),
+                'closedArrival'       => $rate->isClosedArrival(),
+                'closedDeparture'     => $rate->isClosedDeparture(),
             ];
         }
 
@@ -381,6 +506,7 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
     {
         try {
             // create and send a request to your system and inform about the new booking.
+            usleep(1);
         } catch (\Exception $e) {
             $message = sprintf('Notification for booking \'%s\' failed!.', $booking->getBookingUUID());
             throw new BookingNotificationFailedException($message, $e->getCode(), $e);
