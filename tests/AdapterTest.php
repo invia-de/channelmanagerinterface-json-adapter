@@ -534,7 +534,6 @@ class AdapterTest extends TestCase
                                 '2017-01-30' => 42.0,
                             ],
                             'totalPrice'        => 42.0,
-                            'commission'        => 10,
                             'cancellationCosts' => 0.0,
                             'guests'            => [
                                 [
@@ -589,7 +588,7 @@ class AdapterTest extends TestCase
                             ->setDate(new \DateTime(key($responseData['bookings'][0]['bookedRates'][0]['dailyPrices'])))
                     ])
                     ->setTotalPrice($responseData['bookings'][0]['bookedRates'][0]['totalPrice'])
-                    ->setCommission($responseData['bookings'][0]['bookedRates'][0]['commission'])
+
                     ->setCancellationCosts($responseData['bookings'][0]['bookedRates'][0]['cancellationCosts'])
                     ->setGuests([
                         (new Guest())
