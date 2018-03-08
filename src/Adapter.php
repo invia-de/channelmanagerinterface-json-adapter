@@ -328,7 +328,6 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
                 'boarding'          => $bookedRate->getBoarding(),
                 'dailyPrices'       => $this->mapDailyPrices($bookedRate->getDailyPrices()),
                 'totalPrice'        => $bookedRate->getTotalPrice(),
-                'commission'        => $bookedRate->getCommission(),
                 'cancellationCosts' => $bookedRate->getCancellationCosts(),
                 'guests'            => $this->mapGuests($bookedRate->getGuests()),
                 'status'            => $bookedRate->getStatus(),
