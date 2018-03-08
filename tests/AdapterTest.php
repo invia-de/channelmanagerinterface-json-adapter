@@ -2,20 +2,26 @@
 
 namespace Invia\Tests\CMI\JsonAdapterBundle;
 
-use Invia\CMI\BookedRatePlan;
+use Invia\CMI\BookedRate;
 use Invia\CMI\Booking;
 use Invia\CMI\BookingRequest;
+use Invia\CMI\CMIError;
+use Invia\CMI\CMIException;
 use Invia\CMI\ConstantsInterface;
-use Invia\CMI\ContactInformation;
 use Invia\CMI\Credentials;
+use Invia\CMI\Customer;
+use Invia\CMI\DailyPrice;
+use Invia\CMI\ExtraOccupancy;
 use Invia\CMI\FacadeInterface;
+use Invia\CMI\Guest;
+use Invia\CMI\Hotel;
+use Invia\CMI\HotelRequest;
 use Invia\CMI\JsonAdapterBundle\Adapter;
-use Invia\CMI\Person;
 use Invia\CMI\Rate;
 use Invia\CMI\RatePlan;
 use Invia\CMI\RatePlanRequest;
-use Invia\CMI\RatePlanSaveRequest;
 use Invia\CMI\RateRequest;
+use Invia\CMI\RateSaveRequest;
 use Invia\CMI\Room;
 use Invia\CMI\RoomRequest;
 use PHPUnit\Framework\TestCase;
@@ -33,7 +39,10 @@ class AdapterTest extends TestCase
      */
     protected $instance;
 
-    protected function setUp()
+    /**
+     * @return void
+     */
+    protected function setUp(): void
     {
         $this->instance = new Adapter();
     }
@@ -162,7 +171,7 @@ class AdapterTest extends TestCase
      *
      * @covers ::handleRequest
      */
-    public function testHandleRequestInvalidMethod(): void
+    public function testHandleRequestCMIException(): void
     {
         $request = new Request();
         $facade  = $this->createMock(FacadeInterface::class);
@@ -172,7 +181,7 @@ class AdapterTest extends TestCase
             ->setRequest($request)
             ->handleRequest($facade);
 
-        $this->assertEquals('[]', $response->getContent());
+        $this->assertEquals('{"errors":[{"code":404,"message":"Called method not found."}]}', $response->getContent());
     }
 
     /**
@@ -180,9 +189,44 @@ class AdapterTest extends TestCase
      *
      * @covers ::handleRequest
      */
-    public function testHandleRequestValidMethod(): void
+    public function testHandleRequestCMIExceptionWithCMIErrors(): void
     {
         $requestData = [
+            'getHotel' => [
+                'uuid' => '9bc590bc-14be-4934-bc64-edbc85564ff7'
+            ]
+        ];
+
+        $errors    = [(new CMIError())->setMessage('Error message')->setCode(2)];
+        $exception = new CMIException('Exception message', 1, $errors);
+
+        $facade = $this->createMock(FacadeInterface::class);
+        $facade
+            ->expects($this->once())
+            ->method('getHotel')
+            ->with($this->isInstanceOf(HotelRequest::class))
+            ->willThrowException($exception);
+
+        $request = $this->createMock(Request::class);
+        $request
+            ->expects($this->once())
+            ->method('getContent')
+            ->willReturn(json_encode($requestData));
+
+        $response = $this
+            ->instance
+            ->setRequest($request)
+            ->handleRequest($facade);
+
+        $this->assertEquals('{"errors":[{"code":1,"message":"Exception message"},{"code":2,"message":"Error message"}]}', $response->getContent());
+    }
+
+    /**
+     * @return array
+     */
+    public function providerHandleRequestValidMethod(): array
+    {
+        $facadeRequestData = [
             'getRooms' => [
                 'uuid' => '521a7c1c-34a8-4e99-b9a8-6011e68060fc'
             ]
@@ -195,15 +239,28 @@ class AdapterTest extends TestCase
                     'name'             => 'lorem ipsum',
                     'count'            => 1,
                     'defaultOccupancy' => 2,
+                    'extraOccupancies' => [
+                        [
+                            'adults'   => 1,
+                            'children' => 2,
+                            'infants'  => 3,
+                        ],
+                    ],
                 ],
             ],
         ];
 
-        $request = $this->createMock(Request::class);
-        $request
+        $facadeRequest = $this->createMock(Request::class);
+        $facadeRequest
             ->expects($this->once())
             ->method('getContent')
-            ->willReturn(json_encode($requestData));
+            ->willReturn(json_encode($facadeRequestData));
+
+        $extraOccupancy = new ExtraOccupancy();
+        $extraOccupancy
+            ->setAdults($responseData['rooms'][0]['extraOccupancies'][0]['adults'])
+            ->setChildren($responseData['rooms'][0]['extraOccupancies'][0]['children'])
+            ->setInfants($responseData['rooms'][0]['extraOccupancies'][0]['infants']);
 
         $room = new Room();
         $room
@@ -211,7 +268,69 @@ class AdapterTest extends TestCase
             ->setName($responseData['rooms'][0]['name'])
             ->setCount($responseData['rooms'][0]['count'])
             ->setDefaultOccupancy($responseData['rooms'][0]['defaultOccupancy'])
-        ;
+            ->setExtraOccupancies([$extraOccupancy]);
+
+        $facadeResponse = [$room];
+
+        return [
+            [
+                $facadeRequest,
+                $facadeResponse,
+                $responseData,
+            ],
+        ];
+    }
+
+    /**
+     * @return void
+     *
+     * @covers ::handleRequest
+     */
+    public function testHandleRequestValidMethod(): void
+    {
+        $facadeRequestData = [
+            'getRooms' => [
+                'uuid' => '521a7c1c-34a8-4e99-b9a8-6011e68060fc'
+            ]
+        ];
+
+        $responseData = [
+            'rooms' => [
+                [
+                    'uuid'             => '691c429a-9b0f-4c34-b2ec-270ee00f2870',
+                    'name'             => 'lorem ipsum',
+                    'count'            => 1,
+                    'defaultOccupancy' => 2,
+                    'extraOccupancies' => [
+                        [
+                            'adults'   => 1,
+                            'children' => 2,
+                            'infants'  => 3,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $facadeRequest = $this->createMock(Request::class);
+        $facadeRequest
+            ->expects($this->once())
+            ->method('getContent')
+            ->willReturn(json_encode($facadeRequestData));
+
+        $extraOccupancy = new ExtraOccupancy();
+        $extraOccupancy
+            ->setAdults($responseData['rooms'][0]['extraOccupancies'][0]['adults'])
+            ->setChildren($responseData['rooms'][0]['extraOccupancies'][0]['children'])
+            ->setInfants($responseData['rooms'][0]['extraOccupancies'][0]['infants']);
+
+        $room = new Room();
+        $room
+            ->setUUID($responseData['rooms'][0]['uuid'])
+            ->setName($responseData['rooms'][0]['name'])
+            ->setCount($responseData['rooms'][0]['count'])
+            ->setDefaultOccupancy($responseData['rooms'][0]['defaultOccupancy'])
+            ->setExtraOccupancies([$extraOccupancy]);
 
         $facade = $this->createMock(FacadeInterface::class);
         $facade
@@ -221,7 +340,7 @@ class AdapterTest extends TestCase
 
         $response = $this
             ->instance
-            ->setRequest($request)
+            ->setRequest($facadeRequest)
             ->handleRequest($facade);
 
         $this->assertEquals(json_encode($responseData), $response->getContent());
@@ -230,7 +349,45 @@ class AdapterTest extends TestCase
     /**
      * @return void
      *
+     * @covers ::getHotel
+     */
+    public function testGetHotel(): void
+    {
+        $reflection = new \ReflectionMethod($this->instance, 'getHotel');
+        $reflection->setAccessible(true);
+
+        $requestData = [
+            'uuid' => '4e2ee6b3-d9a3-4410-bb7c-c92b8829d2e4',
+        ];
+
+        $responseData = [
+            'hotel' => [
+                'uuid'     => '4e2ee6b3-d9a3-4410-bb7c-c92b8829d2e4',
+                'name'     => 'lorem ipsum',
+                'currency' => 'EUR',
+            ],
+        ];
+
+        $hotel = (new Hotel())
+            ->setUUID($responseData['hotel']['uuid'])
+            ->setName($responseData['hotel']['name'])
+            ->setCurrency($responseData['hotel']['currency']);
+
+        $facade = $this->createMock(FacadeInterface::class);
+        $facade
+            ->expects($this->once())
+            ->method('getHotel')
+            ->with($this->isInstanceOf(HotelRequest::class))
+            ->willReturn($hotel);
+
+        $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
+    }
+
+    /**
+     * @return void
+     *
      * @covers ::getRooms
+     * @covers ::mapExtraOccupancies
      */
     public function testGetRooms(): void
     {
@@ -248,9 +405,22 @@ class AdapterTest extends TestCase
                     'name'             => 'lorem ipsum',
                     'count'            => 1,
                     'defaultOccupancy' => 2,
+                    'extraOccupancies' => [
+                        [
+                            'adults'   => 1,
+                            'children' => 2,
+                            'infants'  => 3,
+                        ],
+                    ],
                 ],
             ],
         ];
+
+        $extraOccupancy = new ExtraOccupancy();
+        $extraOccupancy
+            ->setAdults($responseData['rooms'][0]['extraOccupancies'][0]['adults'])
+            ->setChildren($responseData['rooms'][0]['extraOccupancies'][0]['children'])
+            ->setInfants($responseData['rooms'][0]['extraOccupancies'][0]['infants']);
 
         $room = new Room();
         $room
@@ -258,7 +428,7 @@ class AdapterTest extends TestCase
             ->setName($responseData['rooms'][0]['name'])
             ->setCount($responseData['rooms'][0]['count'])
             ->setDefaultOccupancy($responseData['rooms'][0]['defaultOccupancy'])
-        ;
+            ->setExtraOccupancies([$extraOccupancy]);
 
         $facade = $this->createMock(FacadeInterface::class);
         $facade
@@ -266,165 +436,6 @@ class AdapterTest extends TestCase
             ->method('getRooms')
             ->with($this->isInstanceOf(RoomRequest::class))
             ->willReturn([$room]);
-
-        $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
-    }
-
-    /**
-     * @return void
-     *
-     * @covers ::getRates
-     */
-    public function testGetRates(): void
-    {
-        $reflection = new \ReflectionMethod($this->instance, 'getRates');
-        $reflection->setAccessible(true);
-
-        $requestData = [
-            'uuid' => 'cf8ba186-1e22-4c60-be02-41df2ea69682',
-        ];
-
-        $responseData = [
-            'rates' => [
-                [
-                    'uuid'    => 'eb5f55da-d0e8-4f81-9fc4-627662857f08',
-                    'name'    => 'lorem ipsum',
-                    'release' => 1,
-                    'minStay' => 2,
-                    'maxStay' => 3,
-                ],
-            ],
-        ];
-
-        $rate = new Rate();
-        $rate
-            ->setUUID($responseData['rates'][0]['uuid'])
-            ->setName($responseData['rates'][0]['name'])
-            ->setRelease($responseData['rates'][0]['release'])
-            ->setMinStay($responseData['rates'][0]['minStay'])
-            ->setMaxStay($responseData['rates'][0]['maxStay'])
-        ;
-
-        $facade = $this->createMock(FacadeInterface::class);
-        $facade
-            ->expects($this->once())
-            ->method('getRates')
-            ->with($this->isInstanceOf(RateRequest::class))
-            ->willReturn([$rate]);
-
-        $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
-    }
-
-    /**
-     * @return void
-     *
-     * @covers ::getBookings
-     */
-    public function testGetBookings(): void
-    {
-        $reflection = new \ReflectionMethod($this->instance, 'getBookings');
-        $reflection->setAccessible(true);
-
-        $requestData = [
-            'bookingUUID' => 'aa145b36-c6cd-420e-877a-b482d2adacbc',
-            'hotelUUID'   => 'eaec4c7a-205a-4e64-890d-afd5a282ef45',
-            'startDate'   => '2017-01-01',
-            'endDate'     => '2017-01-31',
-            'dateType'    => ConstantsInterface::BOOKING_REQUEST_DATETYPE_MODIFIED,
-            'onlyChanged' => true,
-        ];
-
-        $responseData = [
-            'bookings' => [
-                [
-                    'bookingUUID'        => 'aa145b36-c6cd-420e-877a-b482d2adacbc',
-                    'hotelUUID'          => 'eaec4c7a-205a-4e64-890d-afd5a282ef45',
-                    'arrivalDate'        => '2017-01-30',
-                    'departureDate'      => '2017-01-31',
-                    'bookingDateTime'    => '2017-01-02 13:42:27',
-                    'bookedRatePlans'    => [
-                        [
-                            'rateUUID' => '0b8763ee-41dd-47ea-90b2-36d7e5e4bea3',
-                            'roomUUID' => 'ad6aa4ab-6adc-40c5-93c3-3e0e490e963e',
-                            'count'    => 1,
-                        ],
-                    ],
-                    'status'             => 'open',
-                    'price'              => 42.00,
-                    'currency'           => 'EUR',
-                    'customer'           => [
-                        'gender'    => ConstantsInterface::GENDER_MALE,
-                        'firstName' => 'lorem',
-                        'lastName'  => 'ipsum',
-                    ],
-                    'contactInformation' => [
-                        'streetAndNumber' => 'lorem ipsum 1a',
-                        'postalCode'      => '01234',
-                        'city'            => 'lorem',
-                        'country'         => 'DEU',
-                        'email'           => 'lorem@ipsum.de',
-                        'phone'           => '01234/567890',
-                    ],
-                    'pax'                => [
-                        [
-                            'gender'    => ConstantsInterface::GENDER_MALE,
-                            'firstName' => 'lorem',
-                            'lastName'  => 'ipsum',
-                            'age'       => 30,
-                        ]
-                    ],
-                    'comment'            => 'lorem ipsum',
-                ],
-            ],
-        ];
-
-        $booking = new Booking();
-        $booking
-            ->setBookingUUID($responseData['bookings'][0]['bookingUUID'])
-            ->setHotelUUID($responseData['bookings'][0]['hotelUUID'])
-            ->setArrivalDate(new \DateTime($responseData['bookings'][0]['arrivalDate']))
-            ->setDepartureDate(new \DateTime($responseData['bookings'][0]['departureDate']))
-            ->setBookingDateTime(new \DateTime($responseData['bookings'][0]['bookingDateTime']))
-            ->setBookedRatePlans([
-                (new BookedRatePlan())
-                    ->setRateUUID($responseData['bookings'][0]['bookedRatePlans'][0]['rateUUID'])
-                    ->setRoomUUID($responseData['bookings'][0]['bookedRatePlans'][0]['roomUUID'])
-                    ->setCount($responseData['bookings'][0]['bookedRatePlans'][0]['count'])
-            ])
-            ->setStatus($responseData['bookings'][0]['status'])
-            ->setPrice($responseData['bookings'][0]['price'])
-            ->setCurrency($responseData['bookings'][0]['currency'])
-            ->setCustomer(
-                (new Person())
-                    ->setGender($responseData['bookings'][0]['customer']['gender'])
-                    ->setFirstName($responseData['bookings'][0]['customer']['firstName'])
-                    ->setLastName($responseData['bookings'][0]['customer']['lastName'])
-            )
-            ->setContactInformation(
-                (new ContactInformation())
-                    ->setStreetAndNumber($responseData['bookings'][0]['contactInformation']['streetAndNumber'])
-                    ->setPostalCode($responseData['bookings'][0]['contactInformation']['postalCode'])
-                    ->setCity($responseData['bookings'][0]['contactInformation']['city'])
-                    ->setCountry($responseData['bookings'][0]['contactInformation']['country'])
-                    ->setEmail($responseData['bookings'][0]['contactInformation']['email'])
-                    ->setPhone($responseData['bookings'][0]['contactInformation']['phone'])
-            )
-            ->setPax([
-                (new Person)
-                    ->setGender($responseData['bookings'][0]['pax'][0]['gender'])
-                    ->setFirstName($responseData['bookings'][0]['pax'][0]['firstName'])
-                    ->setLastName($responseData['bookings'][0]['pax'][0]['lastName'])
-                    ->setAge($responseData['bookings'][0]['pax'][0]['age'])
-            ])
-            ->setComment($responseData['bookings'][0]['comment'])
-        ;
-
-        $facade = $this->createMock(FacadeInterface::class);
-        $facade
-            ->expects($this->once())
-            ->method('getBookings')
-            ->with($this->isInstanceOf(BookingRequest::class))
-            ->willReturn([$booking]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
     }
@@ -440,6 +451,194 @@ class AdapterTest extends TestCase
         $reflection->setAccessible(true);
 
         $requestData = [
+            'uuid' => 'cf8ba186-1e22-4c60-be02-41df2ea69682',
+        ];
+
+        $responseData = [
+            'rates' => [
+                [
+                    'uuid'     => 'eb5f55da-d0e8-4f81-9fc4-627662857f08',
+                    'name'     => 'lorem ipsum',
+                    'release'  => 1,
+                    'minStay'  => 2,
+                    'maxStay'  => 3,
+                    'rateType' => ConstantsInterface::RATE_TYPE_NET_RATE,
+                    'boarding' => ConstantsInterface::BOARDING_BREAKFAST,
+                ],
+            ],
+        ];
+
+        $rate = new RatePlan();
+        $rate
+            ->setUUID($responseData['rates'][0]['uuid'])
+            ->setName($responseData['rates'][0]['name'])
+            ->setRelease($responseData['rates'][0]['release'])
+            ->setMinStay($responseData['rates'][0]['minStay'])
+            ->setMaxStay($responseData['rates'][0]['maxStay'])
+            ->setRateType($responseData['rates'][0]['rateType'])
+            ->setBoarding($responseData['rates'][0]['boarding'])
+        ;
+
+        $facade = $this->createMock(FacadeInterface::class);
+        $facade
+            ->expects($this->once())
+            ->method('getRatePlans')
+            ->with($this->isInstanceOf(RatePlanRequest::class))
+            ->willReturn([$rate]);
+
+        $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
+    }
+
+    /**
+     * @return void
+     *
+     * @covers ::getBookings
+     * @covers ::mapBookedRates
+     * @covers ::mapDailyPrices
+     * @covers ::mapGuests
+     * @covers ::mapCustomer
+     */
+    public function testGetBookings(): void
+    {
+        $reflection = new \ReflectionMethod($this->instance, 'getBookings');
+        $reflection->setAccessible(true);
+
+        $requestData = [
+            'bookingUUID' => 'aa145b36-c6cd-420e-877a-b482d2adacbc',
+            'hotelUUID'   => 'eaec4c7a-205a-4e64-890d-afd5a282ef45',
+            'startDate'   => '2017-01-01',
+            'endDate'     => '2017-01-31',
+            'dateType'    => ConstantsInterface::BOOKING_REQUEST_DATETYPE_MODIFIED,
+            'onlyUpdated' => true,
+        ];
+
+        $responseData = [
+            'bookings' => [
+                [
+                    'bookingUUID'        => 'aa145b36-c6cd-420e-877a-b482d2adacbc',
+                    'hotelUUID'          => 'eaec4c7a-205a-4e64-890d-afd5a282ef45',
+                    'arrivalDate'        => '2017-01-30',
+                    'departureDate'      => '2017-01-31',
+                    'createdDateTime'    => '2017-01-02 13:42:27',
+                    'updatedDateTime'    => '2017-01-05 15:06:10',
+                    'bookedRates'        => [
+                        [
+                            'roomUUID'          => 'ad6aa4ab-6adc-40c5-93c3-3e0e490e963e',
+                            'roomName'          => 'lorem',
+                            'rateUUID'          => '0b8763ee-41dd-47ea-90b2-36d7e5e4bea3',
+                            'rateName'          => 'ipsum',
+                            'rateType'          => ConstantsInterface::RATE_TYPE_NET_RATE,
+                            'encashment'        => ConstantsInterface::ENCASHMENT_DIRECT,
+                            'boarding'          => ConstantsInterface::BOARDING_BREAKFAST,
+                            'dailyPrices'       => [
+                                '2017-01-30' => 42.0,
+                            ],
+                            'totalPrice'        => 42.0,
+                            'cancellationCosts' => 0.0,
+                            'guests'            => [
+                                [
+                                    'gender'    => ConstantsInterface::GENDER_MALE,
+                                    'firstName' => 'lorem',
+                                    'lastName'  => 'ipsum',
+                                    'age'       => 30,
+                                ],
+                            ],
+                            'status'            => ConstantsInterface::BOOKING_STATUS_OPEN,
+                        ],
+                    ],
+                    'status'                 => ConstantsInterface::BOOKING_STATUS_OPEN,
+                    'totalBookingPrice'      => 42.00,
+                    'totalCancellationCosts' => 0.0,
+                    'currency'               => 'EUR',
+                    'customer'               => [
+                        'gender'          => ConstantsInterface::GENDER_MALE,
+                        'firstName'       => 'lorem',
+                        'lastName'        => 'ipsum',
+                        'streetAndNumber' => 'lorem ipsum 1a',
+                        'postalCode'      => '01234',
+                        'city'            => 'lorem',
+                        'country'         => 'DEU',
+                        'email'           => 'lorem@ipsum.de',
+                        'phone'           => '01234/567890',
+                    ],
+                    'comment'                => 'lorem ipsum',
+                ],
+            ],
+        ];
+        $booking = new Booking();
+        $booking
+            ->setBookingUUID($responseData['bookings'][0]['bookingUUID'])
+            ->setHotelUUID($responseData['bookings'][0]['hotelUUID'])
+            ->setArrivalDate(new \DateTime($responseData['bookings'][0]['arrivalDate']))
+            ->setDepartureDate(new \DateTime($responseData['bookings'][0]['departureDate']))
+            ->setCreatedDateTime(new \DateTime($responseData['bookings'][0]['createdDateTime']))
+            ->setUpdatedDateTime(new \DateTime($responseData['bookings'][0]['updatedDateTime']))
+            ->setBookedRates([
+                (new BookedRate())
+                    ->setRoomUUID($responseData['bookings'][0]['bookedRates'][0]['roomUUID'])
+                    ->setRoomName($responseData['bookings'][0]['bookedRates'][0]['roomName'])
+                    ->setRateUUID($responseData['bookings'][0]['bookedRates'][0]['rateUUID'])
+                    ->setRateName($responseData['bookings'][0]['bookedRates'][0]['rateName'])
+                    ->setRateType($responseData['bookings'][0]['bookedRates'][0]['rateType'])
+                    ->setEncashment($responseData['bookings'][0]['bookedRates'][0]['encashment'])
+                    ->setBoarding($responseData['bookings'][0]['bookedRates'][0]['boarding'])
+                    ->setDailyPrices([
+                        (new DailyPrice())
+                            ->setPrice(reset($responseData['bookings'][0]['bookedRates'][0]['dailyPrices']))
+                            ->setDate(new \DateTime(key($responseData['bookings'][0]['bookedRates'][0]['dailyPrices'])))
+                    ])
+                    ->setTotalPrice($responseData['bookings'][0]['bookedRates'][0]['totalPrice'])
+
+                    ->setCancellationCosts($responseData['bookings'][0]['bookedRates'][0]['cancellationCosts'])
+                    ->setGuests([
+                        (new Guest())
+                            ->setGender($responseData['bookings'][0]['bookedRates'][0]['guests'][0]['gender'])
+                            ->setFirstName($responseData['bookings'][0]['bookedRates'][0]['guests'][0]['firstName'])
+                            ->setLastName($responseData['bookings'][0]['bookedRates'][0]['guests'][0]['lastName'])
+                            ->setAge($responseData['bookings'][0]['bookedRates'][0]['guests'][0]['age'])
+                    ])
+                    ->setStatus($responseData['bookings'][0]['bookedRates'][0]['status'])
+            ])
+            ->setStatus($responseData['bookings'][0]['status'])
+            ->setTotalBookingPrice($responseData['bookings'][0]['totalBookingPrice'])
+            ->setTotalCancellationCosts($responseData['bookings'][0]['totalCancellationCosts'])
+            ->setCurrency($responseData['bookings'][0]['currency'])
+            ->setCustomer(
+                (new Customer())
+                    ->setGender($responseData['bookings'][0]['customer']['gender'])
+                    ->setFirstName($responseData['bookings'][0]['customer']['firstName'])
+                    ->setLastName($responseData['bookings'][0]['customer']['lastName'])
+                    ->setStreetAndNumber($responseData['bookings'][0]['customer']['streetAndNumber'])
+                    ->setPostalCode($responseData['bookings'][0]['customer']['postalCode'])
+                    ->setCity($responseData['bookings'][0]['customer']['city'])
+                    ->setCountry($responseData['bookings'][0]['customer']['country'])
+                    ->setEmail($responseData['bookings'][0]['customer']['email'])
+                    ->setPhone($responseData['bookings'][0]['customer']['phone'])
+            )
+            ->setComment($responseData['bookings'][0]['comment']);
+
+        $facade = $this->createMock(FacadeInterface::class);
+        $facade
+            ->expects($this->once())
+            ->method('getBookings')
+            ->with($this->isInstanceOf(BookingRequest::class))
+            ->willReturn([$booking]);
+
+        $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
+    }
+
+    /**
+     * @return void
+     *
+     * @covers ::getRates
+     * @covers ::mapRates
+     */
+    public function testGetRates(): void
+    {
+        $reflection = new \ReflectionMethod($this->instance, 'getRates');
+        $reflection->setAccessible(true);
+
+        $requestData = [
             'hotelUUID'        => 'cf8ba186-1e22-4c60-be02-41df2ea69682',
             'roomUUIDs'        => [ 'e460cd06-fe5b-44e0-ba19-f237721686de' ],
             'rateUUIDs'        => [ '6a5a9fd7-cbb0-4ee8-ace1-1447362e95e3' ],
@@ -449,7 +648,7 @@ class AdapterTest extends TestCase
         ];
 
         $responseData = [
-            'ratePlans' => [
+            'rates' => [
                 [
                     'hotelUUID'           => 'cf8ba186-1e22-4c60-be02-41df2ea69682',
                     'roomUUID'            => 'e460cd06-fe5b-44e0-ba19-f237721686de',
@@ -457,7 +656,6 @@ class AdapterTest extends TestCase
                     'date'                => '2017-01-02',
                     'pricePerPerson'      => 42.00,
                     'remainingContingent' => 3,
-                    'booked'              => 2,
                     'stopSell'            => false,
                     'closedArrival'       => false,
                     'closedDeparture'     => false,
@@ -465,26 +663,25 @@ class AdapterTest extends TestCase
             ],
         ];
 
-        $ratePlan = new RatePlan();
-        $ratePlan
-            ->setHotelUUID($responseData['ratePlans'][0]['hotelUUID'])
-            ->setRoomUUID($responseData['ratePlans'][0]['roomUUID'])
-            ->setRateUUID($responseData['ratePlans'][0]['rateUUID'])
-            ->setDate(new \DateTime($responseData['ratePlans'][0]['date']))
-            ->setPricePerPerson($responseData['ratePlans'][0]['pricePerPerson'])
-            ->setRemainingContingent($responseData['ratePlans'][0]['remainingContingent'])
-            ->setBooked($responseData['ratePlans'][0]['booked'])
-            ->setStopSell($responseData['ratePlans'][0]['stopSell'])
-            ->setClosedArrival($responseData['ratePlans'][0]['closedArrival'])
-            ->setClosedDeparture($responseData['ratePlans'][0]['closedDeparture'])
+        $rate = new Rate();
+        $rate
+            ->setHotelUUID($responseData['rates'][0]['hotelUUID'])
+            ->setRoomUUID($responseData['rates'][0]['roomUUID'])
+            ->setRateUUID($responseData['rates'][0]['rateUUID'])
+            ->setDate(new \DateTime($responseData['rates'][0]['date']))
+            ->setPricePerPerson($responseData['rates'][0]['pricePerPerson'])
+            ->setRemainingContingent($responseData['rates'][0]['remainingContingent'])
+            ->setStopSell($responseData['rates'][0]['stopSell'])
+            ->setClosedArrival($responseData['rates'][0]['closedArrival'])
+            ->setClosedDeparture($responseData['rates'][0]['closedDeparture'])
         ;
 
         $facade = $this->createMock(FacadeInterface::class);
         $facade
             ->expects($this->once())
-            ->method('getRatePlans')
-            ->with($this->isInstanceOf(RatePlanRequest::class))
-            ->willReturn([$ratePlan]);
+            ->method('getRates')
+            ->with($this->isInstanceOf(RateRequest::class))
+            ->willReturn([$rate]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
     }
@@ -492,11 +689,12 @@ class AdapterTest extends TestCase
     /**
      * @return void
      *
-     * @covers ::saveRatePlans
+     * @covers ::saveRates
+     * @covers ::mapRates
      */
-    public function testSaveRatePlans(): void
+    public function testSaveRates(): void
     {
-        $reflection = new \ReflectionMethod($this->instance, 'saveRatePlans');
+        $reflection = new \ReflectionMethod($this->instance, 'saveRates');
         $reflection->setAccessible(true);
 
         $requestData = [
@@ -514,7 +712,7 @@ class AdapterTest extends TestCase
         ];
 
         $responseData = [
-            'ratePlans' => [
+            'rates' => [
                 [
                     'hotelUUID'           => 'fdb7efe9-e02d-4fe4-a252-2eda78cc4119',
                     'roomUUID'            => 'd752198d-658a-4138-9de0-25d02601fdd0',
@@ -522,7 +720,6 @@ class AdapterTest extends TestCase
                     'date'                => '2017-01-02',
                     'pricePerPerson'      => 27.00,
                     'remainingContingent' => 5,
-                    'booked'              => 2,
                     'stopSell'            => false,
                     'closedArrival'       => false,
                     'closedDeparture'     => false,
@@ -530,69 +727,26 @@ class AdapterTest extends TestCase
             ],
         ];
 
-        $ratePlan = new RatePlan();
+        $ratePlan = new Rate();
         $ratePlan
-            ->setHotelUUID($responseData['ratePlans'][0]['hotelUUID'])
-            ->setRoomUUID($responseData['ratePlans'][0]['roomUUID'])
-            ->setRateUUID($responseData['ratePlans'][0]['rateUUID'])
-            ->setDate(new \DateTime($responseData['ratePlans'][0]['date']))
-            ->setPricePerPerson($responseData['ratePlans'][0]['pricePerPerson'])
-            ->setRemainingContingent($responseData['ratePlans'][0]['remainingContingent'])
-            ->setBooked($responseData['ratePlans'][0]['booked'])
-            ->setStopSell($responseData['ratePlans'][0]['stopSell'])
-            ->setClosedArrival($responseData['ratePlans'][0]['closedArrival'])
-            ->setClosedDeparture($responseData['ratePlans'][0]['closedDeparture'])
+            ->setHotelUUID($responseData['rates'][0]['hotelUUID'])
+            ->setRoomUUID($responseData['rates'][0]['roomUUID'])
+            ->setRateUUID($responseData['rates'][0]['rateUUID'])
+            ->setDate(new \DateTime($responseData['rates'][0]['date']))
+            ->setPricePerPerson($responseData['rates'][0]['pricePerPerson'])
+            ->setRemainingContingent($responseData['rates'][0]['remainingContingent'])
+            ->setStopSell($responseData['rates'][0]['stopSell'])
+            ->setClosedArrival($responseData['rates'][0]['closedArrival'])
+            ->setClosedDeparture($responseData['rates'][0]['closedDeparture'])
         ;
 
         $facade = $this->createMock(FacadeInterface::class);
         $facade
             ->expects($this->once())
-            ->method('saveRatePlans')
-            ->with($this->isInstanceOf(RatePlanSaveRequest::class))
+            ->method('saveRates')
+            ->with($this->isInstanceOf(RateSaveRequest::class))
             ->willReturn([$ratePlan]);
 
         $this->assertEquals($responseData, $reflection->invokeArgs($this->instance, [$facade, $requestData]));
-    }
-
-    /**
-     * @return void
-     *
-     * @covers ::mapRatePlans
-     */
-    public function testMapRatePlans(): void
-    {
-        $responseData = [
-            [
-                'hotelUUID'           => '78ecdbb7-72a5-421d-a266-7909ac58967e',
-                'roomUUID'            => '10ca5646-050a-4cf6-ae35-6b57adbe8b40',
-                'rateUUID'            => '1decb9fd-7861-4f19-aed7-229b1929f922',
-                'date'                => '2017-01-02',
-                'pricePerPerson'      => 27.00,
-                'remainingContingent' => 5,
-                'booked'              => 2,
-                'stopSell'            => false,
-                'closedArrival'       => false,
-                'closedDeparture'     => false,
-            ],
-        ];
-
-        $ratePlan = new RatePlan();
-        $ratePlan
-            ->setHotelUUID($responseData[0]['hotelUUID'])
-            ->setRoomUUID($responseData[0]['roomUUID'])
-            ->setRateUUID($responseData[0]['rateUUID'])
-            ->setDate(new \DateTime($responseData[0]['date']))
-            ->setPricePerPerson($responseData[0]['pricePerPerson'])
-            ->setRemainingContingent($responseData[0]['remainingContingent'])
-            ->setBooked($responseData[0]['booked'])
-            ->setStopSell($responseData[0]['stopSell'])
-            ->setClosedArrival($responseData[0]['closedArrival'])
-            ->setClosedDeparture($responseData[0]['closedDeparture'])
-        ;
-
-        $reflection = new \ReflectionMethod($this->instance, 'mapRatePlans');
-        $reflection->setAccessible(true);
-
-        $this->assertEquals($responseData, $reflection->invoke($this->instance, [$ratePlan]));
     }
 }
