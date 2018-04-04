@@ -9,6 +9,7 @@ use Invia\CMI\BookingNotificationFailedException;
 use Invia\CMI\BookingNotifyInterface;
 use Invia\CMI\BookingRequest;
 use Invia\CMI\CMIException;
+use Invia\CMI\ConstantsInterface;
 use Invia\CMI\Credentials;
 use Invia\CMI\Customer;
 use Invia\CMI\DailyPrice;
@@ -17,9 +18,7 @@ use Invia\CMI\FacadeInterface;
 use Invia\CMI\Guest;
 use Invia\CMI\HotelRequest;
 use Invia\CMI\Rate;
-use Invia\CMI\RatePlan;
 use Invia\CMI\RatePlanRequest;
-use Invia\CMI\RatePlanSaveRequest;
 use Invia\CMI\RateRequest;
 use Invia\CMI\RateSaveRequest;
 use Invia\CMI\RoomRequest;
@@ -96,37 +95,43 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
      * @param FacadeInterface $facade
      *
      * @return Response
+     *
+     * @throws CMIException
      */
     public function handleRequest(FacadeInterface $facade): Response
     {
         $data   = $this->transform($this->request);
         $method = key($data);
 
-        try {
-            if (\is_string($method) && \in_array($method, self::METHOD_WHITELIST, true)) {
-                $status   = 200;
-                $response = $this->$method($facade, $data[$method]);
-            } else {
-                throw new CMIException('Called method not found.', 404);
-            }
-        } catch (CMIException $exception) {
-            $status   = 400;
-            $response['errors'][] = [
-                'code'    => $exception->getCode(),
-                'message' => $exception->getMessage(),
-            ];
+        if (\is_string($method) && \in_array($method, self::METHOD_WHITELIST, true)) {
+            return new JsonResponse($this->$method($facade, $data[$method]), 200);
+        }
 
-            if (\count($exception->getErrors()) > 0) {
-                foreach ($exception->getErrors() as $error) {
-                    $response['errors'][] = [
-                        'code'    => $error->getCode(),
-                        'message' => $error->getMessage(),
-                    ];
-                }
+        throw new CMIException('Called method not found.', ConstantsInterface::ERROR_INVALID_REQUEST);
+    }
+
+    /**
+     * @param CMIException $exception
+     *
+     * @return Response
+     */
+    public function handleException(CMIException $exception): Response
+    {
+        $response['errors'][] = [
+            'code'    => $exception->getCode(),
+            'message' => $exception->getMessage(),
+        ];
+
+        if (\count($exception->getErrors()) > 0) {
+            foreach ($exception->getErrors() as $error) {
+                $response['errors'][] = [
+                    'code'    => $error->getCode(),
+                    'message' => $error->getMessage(),
+                ];
             }
         }
 
-        return new JsonResponse($response, $status);
+        return new JsonResponse($response, 400);
     }
 
     /**

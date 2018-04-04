@@ -176,49 +176,11 @@ class AdapterTest extends TestCase
         $request = new Request();
         $facade  = $this->createMock(FacadeInterface::class);
 
-        $response = $this
-            ->instance
+        $this->expectException(CMIException::class);
+
+        $this->instance
             ->setRequest($request)
             ->handleRequest($facade);
-
-        $this->assertEquals('{"errors":[{"code":404,"message":"Called method not found."}]}', $response->getContent());
-    }
-
-    /**
-     * @return void
-     *
-     * @covers ::handleRequest
-     */
-    public function testHandleRequestCMIExceptionWithCMIErrors(): void
-    {
-        $requestData = [
-            'getHotel' => [
-                'uuid' => '9bc590bc-14be-4934-bc64-edbc85564ff7'
-            ]
-        ];
-
-        $errors    = [(new CMIError())->setMessage('Error message')->setCode(2)];
-        $exception = new CMIException('Exception message', 1, $errors);
-
-        $facade = $this->createMock(FacadeInterface::class);
-        $facade
-            ->expects($this->once())
-            ->method('getHotel')
-            ->with($this->isInstanceOf(HotelRequest::class))
-            ->willThrowException($exception);
-
-        $request = $this->createMock(Request::class);
-        $request
-            ->expects($this->once())
-            ->method('getContent')
-            ->willReturn(json_encode($requestData));
-
-        $response = $this
-            ->instance
-            ->setRequest($request)
-            ->handleRequest($facade);
-
-        $this->assertEquals('{"errors":[{"code":1,"message":"Exception message"},{"code":2,"message":"Error message"}]}', $response->getContent());
     }
 
     /**
@@ -344,6 +306,27 @@ class AdapterTest extends TestCase
             ->handleRequest($facade);
 
         $this->assertEquals(json_encode($responseData), $response->getContent());
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    /**
+     * @return void
+     *
+     * @covers ::handleException
+     */
+    public function testHandleException(): void
+    {
+        $request   = $this->createMock(Request::class);
+        $errors    = [(new CMIError())->setMessage('Error message')->setCode(2)];
+        $exception = new CMIException('Exception message', 1, $errors);
+
+        $response = $this
+            ->instance
+            ->setRequest($request)
+            ->handleException($exception);
+
+        $this->assertEquals('{"errors":[{"code":1,"message":"Exception message"},{"code":2,"message":"Error message"}]}', $response->getContent());
+        $this->assertEquals(400, $response->getStatusCode());
     }
 
     /**
