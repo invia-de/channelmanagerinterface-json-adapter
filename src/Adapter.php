@@ -442,7 +442,9 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
             ->setRoomUUID($data['roomUUID'])
             ->setRateUUID($data['rateUUID'])
             ->setStartDate(new \DateTime($data['startDate']))
-            ->setEndDate(new \DateTime($data['endDate']));
+            ->setEndDate(new \DateTime($data['endDate']))
+            ->setMinStay($data['minStay'] ?? 0)
+            ->setMaxStay($data['maxStay'] ?? 0);
 
         if (isset($data['affectedWeekDays'])) {
             $rateSaveRequest->setAffectedWeekDays($data['affectedWeekDays']);
@@ -495,6 +497,8 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
                 'stopSell'            => $rate->hasStopSell(),
                 'closedArrival'       => $rate->isClosedArrival(),
                 'closedDeparture'     => $rate->isClosedDeparture(),
+                'minStay'             => $rate->getMinStay(),
+                'maxStay'             => $rate->getMaxStay(),
             ];
         }
 

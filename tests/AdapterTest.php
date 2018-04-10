@@ -459,8 +459,7 @@ class AdapterTest extends TestCase
             ->setMinStay($responseData['rates'][0]['minStay'])
             ->setMaxStay($responseData['rates'][0]['maxStay'])
             ->setRateType($responseData['rates'][0]['rateType'])
-            ->setBoarding($responseData['rates'][0]['boarding'])
-        ;
+            ->setBoarding($responseData['rates'][0]['boarding']);
 
         $facade = $this->createMock(FacadeInterface::class);
         $facade
@@ -642,6 +641,8 @@ class AdapterTest extends TestCase
                     'stopSell'            => false,
                     'closedArrival'       => false,
                     'closedDeparture'     => false,
+                    'minStay'             => 2,
+                    'maxStay'             => 1,
                 ],
             ],
         ];
@@ -657,7 +658,8 @@ class AdapterTest extends TestCase
             ->setStopSell($responseData['rates'][0]['stopSell'])
             ->setClosedArrival($responseData['rates'][0]['closedArrival'])
             ->setClosedDeparture($responseData['rates'][0]['closedDeparture'])
-        ;
+            ->setMinStay($responseData['rates'][0]['minStay'])
+            ->setMaxStay($responseData['rates'][0]['maxStay']);
 
         $facade = $this->createMock(FacadeInterface::class);
         $facade
@@ -692,6 +694,8 @@ class AdapterTest extends TestCase
             'stopSell'            => false,
             'closedArrival'       => false,
             'closedDeparture'     => false,
+            'minStay'             => 2,
+            'maxStay'             => 1,
         ];
 
         $responseData = [
@@ -706,6 +710,8 @@ class AdapterTest extends TestCase
                     'stopSell'            => false,
                     'closedArrival'       => false,
                     'closedDeparture'     => false,
+                    'minStay'             => 2,
+                    'maxStay'             => 1,
                 ],
             ],
         ];
@@ -721,7 +727,8 @@ class AdapterTest extends TestCase
             ->setStopSell($responseData['rates'][0]['stopSell'])
             ->setClosedArrival($responseData['rates'][0]['closedArrival'])
             ->setClosedDeparture($responseData['rates'][0]['closedDeparture'])
-        ;
+            ->setMinStay($responseData['rates'][0]['minStay'])
+            ->setMaxStay($responseData['rates'][0]['maxStay']);
 
         $facade = $this->createMock(FacadeInterface::class);
         $facade
