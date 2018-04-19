@@ -326,8 +326,8 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
             $mapped[] = [
                 'roomUUID'          => $bookedRate->getRoomUUID(),
                 'roomName'          => $bookedRate->getRoomName(),
-                'rateUUID'          => $bookedRate->getRateUUID(),
-                'rateName'          => $bookedRate->getRateName(),
+                'ratePlanUUID'      => $bookedRate->getRatePlanUUID(),
+                'ratePlanName'      => $bookedRate->getRatePlanName(),
                 'rateType'          => $bookedRate->getRateType(),
                 'encashment'        => $bookedRate->getEncashment(),
                 'boarding'          => $bookedRate->getBoarding(),
@@ -412,7 +412,7 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
         $rateRequest = (new RateRequest())
             ->setHotelUUID($data['hotelUUID'])
             ->setRoomUUIDs($data['roomUUIDs'])
-            ->setRateUUIDs($data['rateUUIDs'])
+            ->setRatePlanUUIDs($data['ratePlanUUIDs'])
             ->setStartDate(new \DateTime($data['startDate']))
             ->setEndDate(new \DateTime($data['endDate']));
 
@@ -440,7 +440,7 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
         $rateSaveRequest = (new RateSaveRequest())
             ->setHotelUUID($data['hotelUUID'])
             ->setRoomUUID($data['roomUUID'])
-            ->setRateUUID($data['rateUUID'])
+            ->setRatePlanUUID($data['ratePlanUUID'])
             ->setStartDate(new \DateTime($data['startDate']))
             ->setEndDate(new \DateTime($data['endDate']))
             ->setMinStay($data['minStay'] ?? 0)
@@ -490,7 +490,7 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
             $mapped[] = [
                 'hotelUUID'           => $rate->getHotelUUID(),
                 'roomUUID'            => $rate->getRoomUUID(),
-                'rateUUID'            => $rate->getRateUUID(),
+                'ratePlanUUID'        => $rate->getRatePlanUUID(),
                 'date'                => $rate->getDate()->format(self::DATE_FORMAT),
                 'pricePerPerson'      => $rate->getPricePerPerson(),
                 'remainingContingent' => $rate->getRemainingContingent(),

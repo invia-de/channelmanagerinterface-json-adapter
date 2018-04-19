@@ -21,7 +21,7 @@
     },
     "require": {
         "php": ">=7.2",
-        "invia/channelmanagerinterface": "^0.9.1",
+        "invia/channelmanagerinterface": "^0.11.0",
         "symfony/http-kernel": "~3.4",
         "symfony/config": "~3.4",
         "symfony/dependency-injection": "~3.4"

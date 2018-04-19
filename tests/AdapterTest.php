@@ -507,8 +507,8 @@ class AdapterTest extends TestCase
                         [
                             'roomUUID'          => 'ad6aa4ab-6adc-40c5-93c3-3e0e490e963e',
                             'roomName'          => 'lorem',
-                            'rateUUID'          => '0b8763ee-41dd-47ea-90b2-36d7e5e4bea3',
-                            'rateName'          => 'ipsum',
+                            'ratePlanUUID'      => '0b8763ee-41dd-47ea-90b2-36d7e5e4bea3',
+                            'ratePlanName'      => 'ipsum',
                             'rateType'          => ConstantsInterface::RATE_TYPE_NET_RATE,
                             'encashment'        => ConstantsInterface::ENCASHMENT_DIRECT,
                             'boarding'          => ConstantsInterface::BOARDING_BREAKFAST,
@@ -559,8 +559,8 @@ class AdapterTest extends TestCase
                 (new BookedRate())
                     ->setRoomUUID($responseData['bookings'][0]['bookedRates'][0]['roomUUID'])
                     ->setRoomName($responseData['bookings'][0]['bookedRates'][0]['roomName'])
-                    ->setRateUUID($responseData['bookings'][0]['bookedRates'][0]['rateUUID'])
-                    ->setRateName($responseData['bookings'][0]['bookedRates'][0]['rateName'])
+                    ->setRatePlanUUID($responseData['bookings'][0]['bookedRates'][0]['ratePlanUUID'])
+                    ->setRatePlanName($responseData['bookings'][0]['bookedRates'][0]['ratePlanName'])
                     ->setRateType($responseData['bookings'][0]['bookedRates'][0]['rateType'])
                     ->setEncashment($responseData['bookings'][0]['bookedRates'][0]['encashment'])
                     ->setBoarding($responseData['bookings'][0]['bookedRates'][0]['boarding'])
@@ -623,7 +623,7 @@ class AdapterTest extends TestCase
         $requestData = [
             'hotelUUID'        => 'cf8ba186-1e22-4c60-be02-41df2ea69682',
             'roomUUIDs'        => [ 'e460cd06-fe5b-44e0-ba19-f237721686de' ],
-            'rateUUIDs'        => [ '6a5a9fd7-cbb0-4ee8-ace1-1447362e95e3' ],
+            'ratePlanUUIDs'    => [ '6a5a9fd7-cbb0-4ee8-ace1-1447362e95e3' ],
             'startDate'        => '2017-01-30',
             'endDate'          => '2017-01-31',
             'affectedWeekDays' => [ ConstantsInterface::AFFECTED_WEEK_DAY_MONDAY ],
@@ -634,7 +634,7 @@ class AdapterTest extends TestCase
                 [
                     'hotelUUID'           => 'cf8ba186-1e22-4c60-be02-41df2ea69682',
                     'roomUUID'            => 'e460cd06-fe5b-44e0-ba19-f237721686de',
-                    'rateUUID'            => '6a5a9fd7-cbb0-4ee8-ace1-1447362e95e3',
+                    'ratePlanUUID'        => '6a5a9fd7-cbb0-4ee8-ace1-1447362e95e3',
                     'date'                => '2017-01-02',
                     'pricePerPerson'      => 42.00,
                     'remainingContingent' => 3,
@@ -651,7 +651,7 @@ class AdapterTest extends TestCase
         $rate
             ->setHotelUUID($responseData['rates'][0]['hotelUUID'])
             ->setRoomUUID($responseData['rates'][0]['roomUUID'])
-            ->setRateUUID($responseData['rates'][0]['rateUUID'])
+            ->setRatePlanUUID($responseData['rates'][0]['ratePlanUUID'])
             ->setDate(new \DateTime($responseData['rates'][0]['date']))
             ->setPricePerPerson($responseData['rates'][0]['pricePerPerson'])
             ->setRemainingContingent($responseData['rates'][0]['remainingContingent'])
@@ -685,7 +685,7 @@ class AdapterTest extends TestCase
         $requestData = [
             'hotelUUID'           => 'fdb7efe9-e02d-4fe4-a252-2eda78cc4119',
             'roomUUID'            => 'd752198d-658a-4138-9de0-25d02601fdd0',
-            'rateUUID'            => 'dee4fbff-d4ff-4888-8168-9026aee81813',
+            'ratePlanUUID'        => 'dee4fbff-d4ff-4888-8168-9026aee81813',
             'startDate'           => '2017-01-30',
             'endDate'             => '2017-01-31',
             'affectedWeekDays'    => [ ConstantsInterface::AFFECTED_WEEK_DAY_TUESDAY ],
@@ -703,7 +703,7 @@ class AdapterTest extends TestCase
                 [
                     'hotelUUID'           => 'fdb7efe9-e02d-4fe4-a252-2eda78cc4119',
                     'roomUUID'            => 'd752198d-658a-4138-9de0-25d02601fdd0',
-                    'rateUUID'            => 'dee4fbff-d4ff-4888-8168-9026aee81813',
+                    'ratePlanUUID'        => 'dee4fbff-d4ff-4888-8168-9026aee81813',
                     'date'                => '2017-01-02',
                     'pricePerPerson'      => 27.00,
                     'remainingContingent' => 5,
@@ -720,7 +720,7 @@ class AdapterTest extends TestCase
         $ratePlan
             ->setHotelUUID($responseData['rates'][0]['hotelUUID'])
             ->setRoomUUID($responseData['rates'][0]['roomUUID'])
-            ->setRateUUID($responseData['rates'][0]['rateUUID'])
+            ->setRatePlanUUID($responseData['rates'][0]['ratePlanUUID'])
             ->setDate(new \DateTime($responseData['rates'][0]['date']))
             ->setPricePerPerson($responseData['rates'][0]['pricePerPerson'])
             ->setRemainingContingent($responseData['rates'][0]['remainingContingent'])
