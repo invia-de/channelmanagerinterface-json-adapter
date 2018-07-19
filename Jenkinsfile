@@ -43,9 +43,10 @@ pipeline {
           }
           steps {
             sh """
-              apk add --no-cache \${PHPIZE_DEPS}
+              apk add --no-cache \${PHPIZE_DEPS} libzip-dev
               pecl install xdebug
               docker-php-ext-enable xdebug
+              docker-php-ext-install zip
               php vendor/bin/simple-phpunit --testsuite default --colors=never --log-junit build/junit.xml --coverage-clover build/clover.xml
             """
           }
