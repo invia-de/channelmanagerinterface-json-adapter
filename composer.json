@@ -1,5 +1,5 @@
 {
-    "name": "invia/cmi-json-adapterbundle",
+    "name": "invia/cmi-json-adapter-bundle",
     "description": "A JSON Adapter for the Invia channel manager interface",
     "type": "symfony-bundle",
     "license": "MIT",
@@ -21,12 +21,12 @@
     },
     "require": {
         "php": ">=7.2",
-        "invia/channelmanagerinterface": "^0.11.0",
+        "invia/channelmanagerinterface": "^0.11",
         "symfony/http-kernel": "~3.4",
         "symfony/config": "~3.4",
         "symfony/dependency-injection": "~3.4"
     },
     "require-dev": {
-        "phpunit/phpunit": "@stable"
+        "symfony/phpunit-bridge": "*"
     }
 }

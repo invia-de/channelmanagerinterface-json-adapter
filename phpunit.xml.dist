@@ -5,17 +5,20 @@
          stopOnError="true"
          stopOnFailure="true"
          forceCoversAnnotation="true"
-         verbose="true">
-    <testsuite>
+         verbose="true"
+         colors="true">
+
+    <testsuite name="default">
         <directory suffix="Test.php">tests</directory>
     </testsuite>
 
     <filter>
-        <whitelist >
+        <whitelist processUncoveredFilesFromWhitelist="true">
             <directory suffix=".php">src</directory>
             <exclude>
-                <directory>src/DependencyInjection</directory>
-                <file>src/InviaCMIJsonAdapterBundle.php</file>
+                <directory suffix="Bundle.php">src</directory>
+                <directory suffix="Configuration.php">src/DependencyInjection</directory>
+                <directory suffix="Extension.php">src/DependencyInjection</directory>
             </exclude>
         </whitelist>
     </filter>
