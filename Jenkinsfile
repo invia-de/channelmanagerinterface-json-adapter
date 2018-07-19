@@ -15,23 +15,6 @@ pipeline {
       }
     }
 
-    stage('Prepare Project') {
-      parallel {
-        stage('Prepare PHP') {
-          agent {
-            docker { image 'php:7.2-alpine' }
-          }
-          steps {
-            sh """
-                php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-                php composer-setup.php --install-dir=/usr/local/bin --filename=composer --version=1.6.5
-                composer install --no-progress --no-interaction --optimize-autoloader --no-scripts
-            """
-          }
-        }
-      }
-    }
-
     stage('Test Project') {
       parallel {
         stage('Run phpunit') {
@@ -47,6 +30,9 @@ pipeline {
               pecl install xdebug
               docker-php-ext-enable xdebug
               docker-php-ext-install zip
+              php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+              php composer-setup.php --install-dir=/usr/local/bin --filename=composer --version=1.6.5
+              composer install --no-progress --no-interaction --optimize-autoloader --no-scripts
               php vendor/bin/simple-phpunit --testsuite default --colors=never --log-junit build/junit.xml --coverage-clover build/clover.xml
             """
           }
