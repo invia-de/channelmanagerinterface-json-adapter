@@ -637,6 +637,8 @@ class AdapterTest extends TestCase
                     'ratePlanUUID'        => '6a5a9fd7-cbb0-4ee8-ace1-1447362e95e3',
                     'date'                => '2017-01-02',
                     'pricePerPerson'      => 42.00,
+                    'pricePerChild'       => 27.10,
+                    'pricePerInfant'      => 14.10,
                     'remainingContingent' => 3,
                     'stopSell'            => false,
                     'closedArrival'       => false,
@@ -654,6 +656,8 @@ class AdapterTest extends TestCase
             ->setRatePlanUUID($responseData['rates'][0]['ratePlanUUID'])
             ->setDate(new \DateTime($responseData['rates'][0]['date']))
             ->setPricePerPerson($responseData['rates'][0]['pricePerPerson'])
+            ->setPricePerChild($responseData['rates'][0]['pricePerChild'])
+            ->setPricePerInfant($responseData['rates'][0]['pricePerInfant'])
             ->setRemainingContingent($responseData['rates'][0]['remainingContingent'])
             ->setStopSell($responseData['rates'][0]['stopSell'])
             ->setClosedArrival($responseData['rates'][0]['closedArrival'])
@@ -689,7 +693,9 @@ class AdapterTest extends TestCase
             'startDate'           => '2017-01-30',
             'endDate'             => '2017-01-31',
             'affectedWeekDays'    => [ ConstantsInterface::AFFECTED_WEEK_DAY_TUESDAY ],
-            'pricePerPerson'      => 27,
+            'pricePerPerson'      => 31.4,
+            'pricePerChild'       => 27.1,
+            'pricePerInfant'      => 14.1,
             'remainingContingent' => 5,
             'stopSell'            => false,
             'closedArrival'       => false,
@@ -705,7 +711,9 @@ class AdapterTest extends TestCase
                     'roomUUID'            => 'd752198d-658a-4138-9de0-25d02601fdd0',
                     'ratePlanUUID'        => 'dee4fbff-d4ff-4888-8168-9026aee81813',
                     'date'                => '2017-01-02',
-                    'pricePerPerson'      => 27.00,
+                    'pricePerPerson'      => 31.4,
+                    'pricePerChild'       => 27.1,
+                    'pricePerInfant'      => 14.1,
                     'remainingContingent' => 5,
                     'stopSell'            => false,
                     'closedArrival'       => false,
@@ -723,6 +731,8 @@ class AdapterTest extends TestCase
             ->setRatePlanUUID($responseData['rates'][0]['ratePlanUUID'])
             ->setDate(new \DateTime($responseData['rates'][0]['date']))
             ->setPricePerPerson($responseData['rates'][0]['pricePerPerson'])
+            ->setPricePerChild($responseData['rates'][0]['pricePerChild'])
+            ->setPricePerInfant($responseData['rates'][0]['pricePerInfant'])
             ->setRemainingContingent($responseData['rates'][0]['remainingContingent'])
             ->setStopSell($responseData['rates'][0]['stopSell'])
             ->setClosedArrival($responseData['rates'][0]['closedArrival'])
