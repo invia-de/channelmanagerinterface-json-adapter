@@ -454,6 +454,14 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
             $rateSaveRequest->setPricePerPerson((float) $data['pricePerPerson']);
         }
 
+        if (isset($data['pricePerChild'])) {
+            $rateSaveRequest->setPricePerChild((float) $data['pricePerChild']);
+        }
+
+        if (isset($data['pricePerInfant'])) {
+            $rateSaveRequest->setPricePerInfant((float) $data['pricePerInfant']);
+        }
+
         if (isset($data['remainingContingent'])) {
             $rateSaveRequest->setRemainingContingent((int) $data['remainingContingent']);
         }
@@ -493,6 +501,8 @@ class Adapter implements AdapterInterface, BookingNotifyInterface
                 'ratePlanUUID'        => $rate->getRatePlanUUID(),
                 'date'                => $rate->getDate()->format(self::DATE_FORMAT),
                 'pricePerPerson'      => $rate->getPricePerPerson(),
+                'pricePerChild'       => $rate->getPricePerChild(),
+                'pricePerInfant'      => $rate->getPricePerInfant(),
                 'remainingContingent' => $rate->getRemainingContingent(),
                 'stopSell'            => $rate->hasStopSell(),
                 'closedArrival'       => $rate->isClosedArrival(),
