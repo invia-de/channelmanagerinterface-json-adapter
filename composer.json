@@ -21,12 +21,12 @@
     },
     "require": {
         "php": ">=7.2",
-        "invia/channelmanagerinterface": "^0.12",
+        "invia/channelmanagerinterface": "^0.13.0",
         "symfony/http-kernel": "~3.4",
         "symfony/config": "~3.4",
         "symfony/dependency-injection": "~3.4"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "*"
+        "symfony/phpunit-bridge": "^3.4|^4.0"
     }
 }

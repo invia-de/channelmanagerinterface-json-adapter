@@ -1,0 +1,15 @@
+<?php
+
+$finder = PhpCsFixer\Finder::create()
+    ->exclude('vendor')
+    ->in(__DIR__);
+
+return PhpCsFixer\Config::create()
+    ->setRules([
+        '@PHP70Migration:risky' => true,
+        '@PHP71Migration:risky' => true,
+        '@Symfony:risky' => true,
+    ])
+    ->setRiskyAllowed(true)
+    ->setFormat('checkstyle')
+    ->setFinder($finder);
